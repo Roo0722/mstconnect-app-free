@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -13,6 +13,7 @@ export default function WebsiteScreen() {
   const router = useRouter();
   const { u } = useLocalSearchParams<{ u?: string }>();
   const [loading, setLoading] = useState(true);
+  const web = useRef<WebView>(null);
   const uri = u ? String(u) : `${SITE_URL}/`;
 
   return (
@@ -22,10 +23,21 @@ export default function WebsiteScreen() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.title}>MSTC Website</Text>
+        <Text style={[styles.title, { flex: 1 }]}>MSTC Website</Text>
+        <Pressable
+          testID="reload-btn"
+          onPress={() => {
+            setLoading(true);
+            web.current?.reload();
+          }}
+          style={styles.backBtn}
+        >
+          <Ionicons name="refresh" size={20} color={colors.onSurface} />
+        </Pressable>
       </View>
       <View style={{ flex: 1 }}>
         <WebView
+          ref={web}
           source={{ uri }}
           style={{ flex: 1, backgroundColor: colors.surface }}
           onLoadEnd={() => setLoading(false)}

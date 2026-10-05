@@ -25,6 +25,8 @@ export type MstcEvent = {
   duration_minutes?: number | null;
   description?: string | null;
   starts_at?: string | null;
+  contact?: string | null;
+  past?: boolean;
   created_at: string;
   url?: string;
 };
@@ -64,7 +66,6 @@ function lines(html: string): string[] {
 }
 const MONTHS: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 const DATE_RE = /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})\b/i;
-const TIME_RE = /\b(\d{1,2}):(\d{2})\s*(AM|PM)\b/i;
 const pad = (n: number) => String(n).padStart(2, "0");
 function parseDate(text: string): { iso: string; index: number } | null {
   const m = DATE_RE.exec(text);
@@ -72,7 +73,7 @@ function parseDate(text: string): { iso: string; index: number } | null {
   return { iso: `${m[3]}-${pad(MONTHS[m[1].toLowerCase()])}-${pad(Number(m[2]))}`, index: m.index };
 }
 
-type Card = { slug: string; url: string; title: string; segment: string };
+type Card = { slug: string; url: string; title: string; segment: string; start: number };
 
 // Finds every link to /<section>/<slug> and slices the page into one segment per card.
 function cards(html: string, section: string): Card[] {
@@ -104,10 +105,10 @@ function cards(html: string, section: string): Card[] {
     const mine = found.filter((f) => f.slug === slug);
     const segment = page.slice(starts[i], i + 1 < order.length ? starts[i + 1] : page.length);
     const title =
-      mine.map((f) => f.text).filter((t) => t && !/^read\b/i.test(t) && !/^view\b/i.test(t)).sort((a, b) => b.length - a.length)[0] ?? "";
+      mine.map((f) => f.text).filter((t) => t && !/^(read|view|event details|details)\b/i.test(t) && !/→\s*$/.test(t)).sort((a, b) => b.length - a.length)[0] ?? "";
     const href = mine[0].href;
     const url = absUrl(href);
-    return { slug, url, title, segment };
+    return { slug, url, title, segment, start: starts[i] };
   }).filter((c) => c.title);
 }
 
@@ -203,30 +204,87 @@ async function listAnnouncements(): Promise<Announcement[]> {
   });
 }
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function prettyDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dow = DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${dow}, ${MONTH_NAMES[m - 1]} ${d}, ${y}`;
+}
+
+// Understands "07:00–11:30" (24-hour) as well as "7:00 AM - 11:30 AM".
+function parseClocks(text: string): number[] {
+  const out: number[] = [];
+  for (const m of text.matchAll(/(\d{1,2}):(\d{2})\s*(AM|PM)?/gi)) {
+    let h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h > 24 || min > 59) continue;
+    const ap = m[3]?.toUpperCase();
+    if (ap === "PM" && h < 12) h += 12;
+    if (ap === "AM" && h === 12) h = 0;
+    out.push(h * 60 + min);
+    if (out.length === 2) break;
+  }
+  return out;
+}
+
+function prettyClock(total: number) {
+  const t = ((total % 1440) + 1440) % 1440;
+  const h24 = Math.floor(t / 60);
+  const m = t % 60;
+  return `${h24 % 12 || 12}:${pad(m)} ${h24 >= 12 ? "PM" : "AM"}`;
+}
+
 async function listEvents(): Promise<MstcEvent[]> {
   const html = await getHtml("/events");
+  const pastAt = html.search(/>\s*Past events\s*</i);
   return cards(html, "events").map((c) => {
-    const text = clean(c.segment);
-    const date = parseDate(text);
-    const t = TIME_RE.exec(text);
-    let starts_at: string | null = null;
-    let time: string | null = null;
-    if (date && t) {
-      let h = Number(t[1]) % 12;
-      if (t[3].toUpperCase() === "PM") h += 12;
-      starts_at = `${date.iso}T${pad(h)}:${t[2]}:00+08:00`;
-      time = `${t[1]}:${t[2]} ${t[3].toUpperCase()}`;
+    const ls = lines(c.segment).filter(
+      (l) => l !== c.title && !/^(upcoming|past events)$/i.test(l) && !/^\d{1,2}\/\d{1,2}$/.test(l) && !/^pinned$/i.test(l) && !/^event details/i.test(l),
+    );
+
+    // the "Oct 10, 2026 · 07:00–11:30" line
+    const di = ls.findIndex((l) => DATE_RE.test(l));
+    const dateLine = di >= 0 ? ls[di] : "";
+    const date = parseDate(dateLine);
+    const clocks = parseClocks(dateLine.replace(DATE_RE, " "));
+    const start = clocks[0];
+    const end = clocks[1];
+    let duration = 120;
+    if (start !== undefined && end !== undefined) duration = (end - start + 1440) % 1440 || 120;
+
+    const starts_at =
+      date && start !== undefined ? `${date.iso}T${pad(Math.floor(start / 60) % 24)}:${pad(start % 60)}:00+08:00` : null;
+    const time = start === undefined ? null : end === undefined ? prettyClock(start) : `${prettyClock(start)} – ${prettyClock(end)}`;
+
+    // everything after the date line: location, optional "Contact:", then the description
+    const after = di >= 0 ? ls.slice(di + 1) : ls;
+    let location: string | null = null;
+    let contact: string | null = null;
+    const rest: string[] = [];
+    for (const l of after) {
+      const label = /^(?:📍\s*|(?:Location|Venue|Where)\s*:?\s*)(.+)$/i.exec(l);
+      const con = /^contact(?:s| number)?\s*:?\s*(.+)$/i.exec(l);
+      if (con) contact = con[1].trim();
+      else if (label && !location) location = label[1].trim();
+      else if (!location && rest.length === 0 && l.length <= 90 && !/…$|\.\.\.$/.test(l)) location = l;
+      else rest.push(l);
     }
-    const loc = lines(c.segment).map((l) => /^(?:📍\s*|(?:Location|Venue|Where)\s*:?\s*)(.+)$/i.exec(l)).find(Boolean);
+
+    const description = [rest.join("\n"), contact ? `Contact: ${contact}` : ""].filter(Boolean).join("\n\n") || null;
+
     return {
       id: c.slug,
       title: c.title,
-      date: date?.iso ?? null,
+      date: date ? prettyDate(date.iso) : null,
       time,
-      location: loc?.[1]?.trim() ?? null,
-      duration_minutes: 120,
-      description: excerpt(c) || null,
+      location,
+      duration_minutes: duration,
+      description,
       starts_at,
+      contact,
+      past: pastAt >= 0 && c.start > pastAt,
       created_at: date ? `${date.iso}T00:00:00+08:00` : new Date(0).toISOString(),
       url: c.url,
     };
@@ -236,8 +294,8 @@ async function listEvents(): Promise<MstcEvent[]> {
 async function nextEvent(): Promise<MstcEvent | null> {
   const now = Date.now();
   const upcoming = (await listEvents()).filter((e) => {
+    if (e.past) return false;
     if (e.starts_at) return Date.parse(e.starts_at) + (e.duration_minutes ?? 120) * 60_000 >= now;
-    if (e.date) return Date.parse(`${e.date}T23:59:59+08:00`) >= now;
     return true;
   });
   upcoming.sort((a, b) => (a.starts_at ? Date.parse(a.starts_at) : Infinity) - (b.starts_at ? Date.parse(b.starts_at) : Infinity));
@@ -277,6 +335,7 @@ export const api = {
   getArticle,
   listAnnouncements,
   nextEvent,
+  listEvents,
   listNotifications,
   markRead: async (id: string) => {
     const ids = await readIds();

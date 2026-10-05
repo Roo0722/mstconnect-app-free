@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -33,7 +33,7 @@ function useCountdown(targetIso?: string | null, durationMin: number = 120) {
   }, [targetIso, now, durationMin]);
 }
 
-function EventCard({ event }: { event: MstcEvent | null | undefined }) {
+function EventCard({ event, onPress }: { event: MstcEvent | null | undefined; onPress?: () => void }) {
   const countdown = useCountdown(event?.starts_at, event?.duration_minutes ?? 120);
   const title = event?.title ?? "No upcoming event yet";
   const location = event?.location ?? "TBD";
@@ -44,7 +44,7 @@ function EventCard({ event }: { event: MstcEvent | null | undefined }) {
   const live = countdown.state === "live";
 
   return (
-    <View style={styles.hero} testID="next-event-card">
+    <Pressable style={styles.hero} testID="next-event-card" onPress={onPress} disabled={!onPress}>
       <View style={styles.heroTopRow}>
         <Text style={styles.heroEyebrow}>NEXT MSTC EVENT</Text>
         <View
@@ -99,7 +99,7 @@ function EventCard({ event }: { event: MstcEvent | null | undefined }) {
         <MetaRow icon="time-outline" text={time} />
         <MetaRow icon="location-outline" text={location} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -128,6 +128,13 @@ export default function HomeScreen() {
   const annQ = useQuery({ queryKey: ["announcements"], queryFn: api.listAnnouncements });
   const notifQ = useQuery({ queryKey: ["notifications"], queryFn: api.listNotifications });
 
+  const refreshing = eventQ.isRefetching || annQ.isRefetching || notifQ.isRefetching;
+  const onRefresh = () => {
+    eventQ.refetch();
+    annQ.refetch();
+    notifQ.refetch();
+  };
+
   const latest = annQ.data?.[0];
   const unreadCount = (notifQ.data ?? []).filter((n) => !n.read).length;
 
@@ -141,6 +148,7 @@ export default function HomeScreen() {
           paddingHorizontal: spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
       >
         <View style={styles.headerRow}>
           <View>
@@ -171,7 +179,18 @@ export default function HomeScreen() {
             <ActivityIndicator color={colors.brandPrimary} />
           </View>
         ) : (
-          <EventCard event={eventQ.data ?? null} />
+          <EventCard
+            event={eventQ.data ?? null}
+            onPress={
+              eventQ.data?.url
+                ? () =>
+                    router.push({
+                      pathname: "/article",
+                      params: { url: eventQ.data!.url!, title: eventQ.data!.title, date: eventQ.data!.date ?? "", category: "event" },
+                    })
+                : undefined
+            }
+          />
         )}
 
         <Text style={styles.sectionLabel}>LATEST ANNOUNCEMENT</Text>
