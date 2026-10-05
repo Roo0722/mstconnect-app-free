@@ -2,11 +2,13 @@ import { useState } from "react";
 import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 
 export default function ScoreScreen() {
+  useKeepAwake("mstc-score");
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [a, setA] = useState(0);

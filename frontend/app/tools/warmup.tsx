@@ -2,9 +2,12 @@ import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
+import { cue, useSoundEnabled } from "../../src/sound";
+import { tickWarmup } from "../../src/timerLogic";
 
 type Step = {
   name: string;
@@ -48,32 +51,29 @@ export default function WarmupScreen() {
   const [running, setRunning] = useState(false);
   const [idx, setIdx] = useState(0);
   const [remaining, setRemaining] = useState(STEPS[0].seconds);
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [soundOn, setSoundOn] = useSoundEnabled();
+  useKeepAwake("mstc-warmup"); // screen stays on during the warm-up
+
+  const latest = useRef({ idx, remaining });
+  latest.current = { idx, remaining };
 
   useEffect(() => {
-    if (!running) {
-      if (ref.current) clearInterval(ref.current);
-      return;
-    }
-    ref.current = setInterval(() => {
-      setRemaining((r) => {
-        if (r > 1) return r - 1;
-        setIdx((i) => {
-          if (i + 1 >= STEPS.length) {
-            setRunning(false);
-            setTimeout(() => {
-              setRemaining(STEPS[0].seconds);
-            }, 0);
-            return 0;
-          }
-          setTimeout(() => setRemaining(STEPS[i + 1].seconds), 0);
-          return i + 1;
-        });
-        return 0;
-      });
+    if (!running) return;
+    const id = setInterval(() => {
+      const cur = latest.current;
+      const res = tickWarmup(cur.idx, cur.remaining, (i) => STEPS[i].seconds, STEPS.length);
+      setIdx(res.idx);
+      setRemaining(res.remaining);
+      if (res.finished) setRunning(false);
+      cue(res.cue);
     }, 1000);
-    return () => { if (ref.current) clearInterval(ref.current); };
+    return () => clearInterval(id);
   }, [running]);
+
+  const toggle = () => {
+    if (!running && idx === 0 && remaining === STEPS[0].seconds) cue("start");
+    setRunning((v) => !v);
+  };
 
   const totalSec = STEPS.reduce((a, b) => a + b.seconds, 0);
   const current = STEPS[idx];
@@ -101,6 +101,9 @@ export default function WarmupScreen() {
           <Text style={styles.title}>Warm-Up Guide</Text>
           <Text style={styles.subtitle}>{STEPS.length} steps · ~{Math.round(totalSec / 60)} min</Text>
         </View>
+        <Pressable testID="sound-toggle" onPress={() => setSoundOn(!soundOn)} style={styles.backBtn}>
+          <Ionicons name={soundOn ? "volume-high" : "volume-mute"} size={20} color={soundOn ? colors.brandSecondary : colors.muted} />
+        </Pressable>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}>
         <View style={styles.active}>
@@ -126,7 +129,7 @@ export default function WarmupScreen() {
             <Pressable
               testID="warmup-toggle"
               style={[styles.ctrlPrimary, { backgroundColor: running ? colors.surfaceTertiary : colors.brandPrimary }]}
-              onPress={() => setRunning((v) => !v)}
+              onPress={toggle}
             >
               <Ionicons name={running ? "pause" : "play"} size={24} color={running ? colors.onSurface : colors.onBrandPrimary} />
             </Pressable>

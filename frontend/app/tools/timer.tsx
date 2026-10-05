@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
-
-type Phase = "work" | "rest";
+import { cue, useSoundEnabled } from "../../src/sound";
+import { tickTimer, type Phase } from "../../src/timerLogic";
 
 const PRESETS = [
   { label: "5 × 2' / 30\"", work: 120, rest: 30, rounds: 5 },
@@ -29,7 +30,12 @@ export default function TimerScreen() {
   const [phase, setPhase] = useState<Phase>("work");
   const [remaining, setRemaining] = useState(preset.work);
   const [round, setRound] = useState(1);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [soundOn, setSoundOn] = useSoundEnabled();
+  useKeepAwake("mstc-timer"); // screen stays on while the timer screen is open
+
+  // latest values for the 1-second interval (avoids stale closures)
+  const latest = useRef({ phase, remaining, round, preset });
+  latest.current = { phase, remaining, round, preset };
 
   useEffect(() => {
     reset();
@@ -37,42 +43,23 @@ export default function TimerScreen() {
   }, [presetIdx]);
 
   useEffect(() => {
-    if (!running) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-    intervalRef.current = setInterval(() => {
-      setRemaining((r) => {
-        if (r > 1) return r - 1;
-        setPhase((p) => {
-          if (p === "work") {
-            // transition to rest
-            setTimeout(() => setRemaining(preset.rest), 0);
-            return "rest";
-          } else {
-            // next round
-            if (round >= preset.rounds) {
-              setRunning(false);
-              setTimeout(() => {
-                setRound(1);
-                setRemaining(preset.work);
-              }, 0);
-              return "work";
-            }
-            setTimeout(() => {
-              setRound((rd) => rd + 1);
-              setRemaining(preset.work);
-            }, 0);
-            return "work";
-          }
-        });
-        return 0;
-      });
+    if (!running) return;
+    const id = setInterval(() => {
+      const cur = latest.current;
+      const res = tickTimer({ phase: cur.phase, remaining: cur.remaining, round: cur.round }, cur.preset);
+      setPhase(res.state.phase);
+      setRemaining(res.state.remaining);
+      setRound(res.state.round);
+      if (res.finished) setRunning(false);
+      cue(res.cue);
     }, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [running, preset, round]);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const toggle = () => {
+    if (!running && phase === "work" && round === 1 && remaining === preset.work) cue("start");
+    setRunning((v) => !v);
+  };
 
   const reset = () => {
     setRunning(false);
@@ -91,7 +78,10 @@ export default function TimerScreen() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.title}>Training Timer</Text>
+        <Text style={[styles.title, { flex: 1 }]}>Training Timer</Text>
+        <Pressable testID="sound-toggle" onPress={() => setSoundOn(!soundOn)} style={styles.backBtn}>
+          <Ionicons name={soundOn ? "volume-high" : "volume-mute"} size={20} color={soundOn ? colors.brandSecondary : colors.muted} />
+        </Pressable>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl, alignItems: "center" }}>
         <Text style={styles.phase} testID="timer-phase">
@@ -113,7 +103,7 @@ export default function TimerScreen() {
           <Pressable
             testID="timer-toggle"
             style={[styles.ctrlPrimary, { backgroundColor: running ? colors.surfaceTertiary : colors.brandPrimary }]}
-            onPress={() => setRunning((v) => !v)}
+            onPress={toggle}
           >
             <Ionicons
               name={running ? "pause" : "play"}

@@ -40,6 +40,8 @@ jobs:
         run: |
           npm pkg delete scripts.preinstall   # Emergent sandbox guard, not needed in CI
           npm install --legacy-peer-deps
+          # sound + screen-awake packages, in the versions that match this Expo SDK
+          npx expo install expo-audio expo-keep-awake -- --legacy-peer-deps
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean

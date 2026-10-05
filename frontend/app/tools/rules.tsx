@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
+import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
@@ -56,6 +57,7 @@ const SECTIONS = [
 ];
 
 export default function RulesScreen() {
+  useKeepAwake("mstc-rules");
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
