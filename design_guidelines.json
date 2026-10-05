@@ -1,0 +1,164 @@
+{
+  "app_name": "MSTConnect",
+  "personality": "7 Dark-First Utility DARK",
+  "personality_one_liner": "A high-impact, stadium-night aesthetic built for the grassroots Sepak Takraw community—bold, energetic, and always free.",
+  "color": {
+    "surface": "#0a0a0c",
+    "onSurface": "#f5f2ea",
+    "surfaceSecondary": "#101014",
+    "onSurfaceSecondary": "#f5f2ea",
+    "surfaceTertiary": "#141419",
+    "onSurfaceTertiary": "#f5f2ea",
+    "surfaceInverse": "#f5f2ea",
+    "onSurfaceInverse": "#0a0a0c",
+    "brand": "#e0362c",
+    "onBrand": "#f5f2ea",
+    "brandPrimary": "#e0362c",
+    "onBrandPrimary": "#f5f2ea",
+    "brandSecondary": "#fcd116",
+    "onBrandSecondary": "#0a0a0c",
+    "brandTertiary": "rgba(224, 54, 44, 0.15)",
+    "onBrandTertiary": "#e0362c",
+    "success": "#34d399",
+    "onSuccess": "#0a0a0c",
+    "warning": "#fcd116",
+    "onWarning": "#0a0a0c",
+    "error": "#e0362c",
+    "onError": "#f5f2ea",
+    "info": "#3b82f6",
+    "onInfo": "#f5f2ea",
+    "border": "#2a2a2e",
+    "borderStrong": "#fcd116",
+    "divider": "#1a1a20",
+    "muted": "rgba(245, 242, 234, 0.64)",
+    "finePrint": "rgba(245, 242, 234, 0.40)"
+  },
+  "typography": {
+    "displayFontFamily": "Barlow Condensed",
+    "textFontFamily": "Manrope",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 32,
+      "4xl": 48
+    }
+  },
+  "spacing": {
+    "rule": "Generous tactile spacing on cards, tight operational spacing on timers/counters.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use heavy glass on the bottom tab bar and sticky headers to keep the energetic background glows visible but abstracted.",
+      "Apply glass overlay on the Countdown Hero Card to ensure the text remains legible over the court background."
+    ],
+    "dont's": [
+      "Do not blur individual list rows or form fields.",
+      "Do not over-lighten the glass. Stick to dark tinted overlays (surfaceSecondary opacity at ~75%)."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home",
+      "purpose": "Primary operational dashboard highlighting the NEXT MSTC EVENT countdown.",
+      "states": {
+        "loading": "Centered brand-colored activity indicator.",
+        "empty": "No upcoming events state: Show 'TBD' or 'No upcoming event yet' inside the hero card with a friendly message.",
+        "error": "Failed to load event data. Show retry button."
+      },
+      "layout": "Root background must feature a soft red glow (#e0362c at 20% opacity) at the top-right and a faint yellow glow (#fcd116 at 15% opacity) at the bottom-left using blurred absolute views or SVG radial gradients. Top section: Large 'NEXT MSTC EVENT' card taking up 40% of the screen. Display the timer (Days : Hrs : Mins) in Barlow Condensed 4xl. The card should use the court drone image as a background, with a heavy top-to-bottom gradient scrim (transparent to 80% surfaceSecondary) to guarantee text contrast. Below the hero card: Quick glance of the latest Announcement."
+    },
+    {
+      "name": "Announcements",
+      "purpose": "Feed of newest-first posts including events, recruitment, and training notices.",
+      "states": {
+        "loading": "Skeleton cards representing the feed.",
+        "empty": "Illustration of a Sepak Takraw ball with text 'No announcements yet'.",
+        "error": "Could not fetch announcements. Show error and reload CTA."
+      },
+      "layout": "Vertical ScrollView of cards using surfaceTertiary background. Titles in display font, body in muted textFont. Highlight 'Recruitment' or 'Event' tags using brandTertiary background with brand text."
+    },
+    {
+      "name": "Notifications",
+      "purpose": "In-app history of pings and updates.",
+      "states": {
+        "loading": "List skeletons.",
+        "empty": "Bell icon in surfaceTertiary circle. 'You are all caught up.'",
+        "error": "Failed to load notifications."
+      },
+      "layout": "Simple, dense list layout. Unread notifications have a brandSecondary (yellow) left border (borderStrong) or dot."
+    },
+    {
+      "name": "Enquiry",
+      "purpose": "Contact form for community queries via Formspree.",
+      "states": {
+        "loading": "Form submitting state.",
+        "empty": "N/A",
+        "error": "Form submission failed."
+      },
+      "layout": "Single column form inside a KeyboardAvoidingView. Labels above inputs. Inputs use surfaceTertiary background with border on focus (brandSecondary). Sticky 'Submit Enquiry' button anchored to the bottom."
+    },
+    {
+      "name": "Tools",
+      "purpose": "Hub for utility features: Training timer, Warm-up guide, Score counter, and Rules reference.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Grid of touchable tiles (2-col grid). Each tile has an icon and a title. Selecting a tile pushes a new screen. E.g., The Score Counter should be a high-contrast horizontal layout with oversized tap areas for left/right teams. The Training Timer uses massive display typography and a circular progress indicator."
+    }
+  ],
+  "images": {
+    "hero_court_background": {
+      "url": "https://images.pexels.com/photos/27429711/pexels-photo-27429711.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Drone shot of a local Philippine sports court"
+    },
+    "empty_state_graphic": {
+      "url": "https://images.unsplash.com/photo-1598802214267-6a4fdbeaaaee?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwzfHxzZXBhayUyMHRha3JhdyUyMHNwb3J0JTIwbWF0Y2h8ZW58MHx8fHwxNzkxMTM0NDc0fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Sepak Takraw abstract placeholder"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Follow the Dark-First Utility DARK rules. The app should feel like a command center for a sports community—high contrast, operational, energetic.",
+    "Implement the global screen background with the user's specific request: near-black (#0a0a0c) with a soft red glow at the top right and a faint yellow glow at the bottom left. You can achieve this via blurred absolute positioned `<View>` components or Skia/SVG radial gradients placed behind the main content.",
+    "The Hero Countdown Card is the focal point of the Home screen. Render the Days, Hours, and Minutes as large segmented blocks using Barlow Condensed. It must support multiple states: standard countdown, 'TBD', 'No upcoming event yet', and 'Event in Progress' (perhaps pulsating red for live).",
+    "Use yellow (#fcd116) strictly for highlights, links, and focus outlines (e.g. active tab icon, focused text input). Use red (#e0362c) for primary call-to-actions, echoing the Philippine flag styling.",
+    "When rendering cards, alternate between #101014 (surfaceSecondary) for sections and #141419 (surfaceTertiary) for elevated cards.",
+    "Ensure all text rendered over images (like the Hero Countdown Card over the court background) uses a heavy top-to-bottom gradient scrim to guarantee text readability.",
+    "For the MSTC Website tab/action, implement an external link open to 'https://mstc.pages.dev/'.",
+    "Never use pure blue or purple. The palette is strictly near-black, warm off-white, red, and yellow.",
+    "Add subtle haptic feedback for all tab changes, timer toggles, and form submissions."
+  ]
+}
