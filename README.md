@@ -8,7 +8,7 @@ MSTConnect puts the community's announcements, events and training tools in your
 [**⬇ Download the latest APK**](../../releases/latest)
 
 
-   <img src="docs/screenshots/home.jpg" width="380" alt="MSTConnect home screen">
+<img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
 
 ---
 
