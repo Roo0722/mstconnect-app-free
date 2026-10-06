@@ -5,7 +5,13 @@
 
 MSTConnect puts the community's announcements, events and training tools in your pocket: a news feed, a training timer, a guided warm-up, a score counter and a quick rules reference. It is **free to use, free to build and free to host**: there is no database to pay for and no backend to run.
 
-[**⬇ Download the latest APK**](../../releases/latest)
+<div align="center">
+
+[![Download APK](https://img.shields.io/badge/⬇️_Download-Latest_APK_v1.0-238636?style=for-the-badge)](../../releases/latest)
+
+<sub>*Free & Open Source • Android 8.0+ required*</sub>
+
+</div>
 
 
 <img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
