@@ -45,11 +45,19 @@ https://mstc-platform.thereal-jnjnbnd.workers.dev
 
 - It turns those pages into native cards, so anything posted on the website appears in the app.
 - Tapping an announcement loads that post's page and shows just its content (title, photos, paragraphs, lists) in a clean in-app reader. If a post can't be read as text, it falls back to showing the page inside the app.
-- **Notifications** are built on the phone from the announcements, and read/unread state is kept on the device. There are no accounts and no push notifications, and nothing is stored on a server.
+- **Notifications** are built on the phone from the announcements, and read/unread state is kept on the device. There are no accounts, and nothing personal is stored on a server.
 
 To point the app at a different address, change the `EXPO_PUBLIC_API_URL` value in `.github/workflows/build-apk.yml` (or set it as an environment variable when running locally). The default is already the platform above.
 
 > **Heads-up:** because the app reads the website's pages, a big redesign of the website's HTML could affect how cards are read. The reading code is in `frontend/src/api.ts` and is the only place to adjust.
+
+---
+
+## Push notifications (optional, free)
+
+The app can notify members about new announcements and events, plus a "starts in 1 hour" reminder, even when it's closed. It uses Firebase Cloud Messaging and a small separate Cloudflare Worker (`push-worker/worker.js`) that reads the same database as the platform. It never changes the live platform Worker. Setup guide: **[`push-worker/SETUP.md`](push-worker/SETUP.md)**.
+
+Without that setup the app works exactly as before. It just doesn't send notifications.
 
 ---
 
@@ -102,6 +110,7 @@ If `npm install` stops on a `cmd-guard` message (a leftover from the Emergent sa
 ```
 .
 ├── .github/workflows/build-apk.yml   # builds the APK on GitHub Actions
+├── push-worker/                      # optional free push-notification Worker + setup guide
 └── frontend/                         # the Expo / React Native app
     ├── app/                          # screens (Expo Router)
     │   ├── (tabs)/                   #   Home, News, Tools, More
@@ -112,6 +121,7 @@ If `npm install` stops on a `cmd-guard` message (a leftover from the Emergent sa
     ├── src/
     │   ├── api.ts                    # reads the MSTC pages, builds cards & notifications
     │   ├── sound.ts                  # beeps, haptics, mute setting
+    │   ├── push.ts                   # push-notification registration and tap handling
     │   ├── timerLogic.ts             # timer / warm-up counting logic
     │   └── theme.ts                  # colours and spacing
     ├── assets/
@@ -136,6 +146,7 @@ The app started life as an Emergent-generated project that depended on Emergent'
 - **Wake lock** on all four tools (Timer, Warm-Up, Score, Rules) so the screen stays on.
 - **Event details fixed.** Event date, time (including 24-hour ranges like 07:00–11:30) and location are now read and shown correctly, and past events are no longer shown as "next".
 - **Pull to refresh** on Home, News, Notifications and the post reader, plus a reload button in the website viewer.
+- **Push notifications (optional).** New announcements, new events and 1-hour event reminders, through a free Cloudflare Worker + Firebase.
 - **Cleaner timer logic.** The timer and warm-up counting now lives in `timerLogic.ts` and drives the sound cues.
 
 ---
@@ -143,7 +154,7 @@ The app started life as an Emergent-generated project that depended on Emergent'
 ## Known limits
 
 - Content depends on the MSTC platform being online. When there is no connection, the News tab shows an empty state with a link to view announcements inside the app.
-- No user accounts, no push notifications and no cloud sync — by design, to keep the app free.
+- No user accounts and no cloud sync, by design, to keep the app free. Push notifications are optional and need the free setup in `push-worker/SETUP.md`.
 - Event details are read from the Events page; the exact layout of event entries should be checked once real events are posted.
 
 ---

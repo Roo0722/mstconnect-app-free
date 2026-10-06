@@ -19,6 +19,12 @@ jobs:
     env:
       EXPO_PUBLIC_API_URL: https://mstc-platform.thereal-jnjnbnd.workers.dev
       EXPO_NO_TELEMETRY: "1"
+      # address of the free push Worker (see push-worker/SETUP.md); harmless if it isn't deployed yet
+      EXPO_PUBLIC_PUSH_URL: https://mstc-push.thereal-jnjnbnd.workers.dev
+      # optional: Firebase config for push notifications; builds fine without it
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      # optional signing key: leave the secrets unset and the build uses the default debug key
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,15 +47,25 @@ jobs:
           npm pkg delete scripts.preinstall   # Emergent sandbox guard, not needed in CI
           npm install --legacy-peer-deps
           # sound + screen-awake packages, in the versions that match this Expo SDK
-          npx expo install expo-audio expo-keep-awake -- --legacy-peer-deps
+          npx expo install expo-audio expo-keep-awake expo-notifications -- --legacy-peer-deps
+
+      - name: Turn on push notifications (only if the Firebase secret is set)
+        if: ${{ env.GOOGLE_SERVICES_JSON != '' }}
+        run: |
+          printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.android.googleServicesFile = './google-services.json';
+            app.expo.plugins = [...(app.expo.plugins || []), ['expo-notifications', { color: '#e0362c' }]];
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
       - name: Sign with your own keystore (optional)
         if: ${{ env.KEYSTORE_B64 != '' }}
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
         run: |
           echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
           {
