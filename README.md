@@ -7,12 +7,9 @@ MSTConnect puts the community's announcements, events and training tools in your
 
 <div align="center">
 
-[![Download APK](https://img.shields.io/badge/⬇️_Download-Latest_APK_v1.0-238636?style=for-the-badge)](../../releases/latest)
-
-<sub>*Free & Open Source • Android 8.0+ required*</sub>
+## [⬇️ Download the Latest APK](../../releases/latest)
 
 </div>
-
 
 <img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
 
