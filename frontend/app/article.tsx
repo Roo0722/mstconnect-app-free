@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { api, type Block } from "../src/api";
+import { RichText } from "../src/RichText";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 
@@ -14,7 +15,8 @@ export default function ArticleScreen() {
   const { url, title, date, category } = useLocalSearchParams<{ url: string; title?: string; date?: string; category?: string }>();
   const q = useQuery({ queryKey: ["article", url], queryFn: () => api.getArticle(String(url)), enabled: !!url });
 
-  const blocks: Block[] = q.data ?? [];
+  const blocks: Block[] = q.data?.blocks ?? [];
+  const shownTitle = title || q.data?.title || "";
 
   return (
     <View style={styles.root}>
@@ -31,7 +33,7 @@ export default function ArticleScreen() {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md }}
         refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
       >
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{shownTitle}</Text>
         {date ? <Text style={styles.date}>{date}</Text> : null}
 
         {q.isLoading ? <ActivityIndicator color={colors.brandPrimary} style={{ marginTop: spacing.xl }} /> : null}
@@ -46,13 +48,13 @@ export default function ArticleScreen() {
               return (
                 <View key={i} style={styles.liRow}>
                   <Text style={styles.bullet}>•</Text>
-                  <Text style={styles.p}>{b.text}</Text>
+                  <RichText style={styles.p} spans={b.spans} />
                 </View>
               );
             case "quote":
-              return <Text key={i} style={styles.quote}>{b.text}</Text>;
+              return <RichText key={i} style={styles.quote} spans={b.spans} />;
             default:
-              return <Text key={i} style={styles.p}>{b.text}</Text>;
+              return <RichText key={i} style={styles.p} spans={b.spans} />;
           }
         })}
 

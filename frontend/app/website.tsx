@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { WebView } from "react-native-webview";
@@ -14,6 +14,7 @@ export default function WebsiteScreen() {
   const { u } = useLocalSearchParams<{ u?: string }>();
   const [loading, setLoading] = useState(true);
   const web = useRef<WebView>(null);
+  const [current, setCurrent] = useState("");
   const uri = u ? String(u) : `${SITE_URL}/`;
 
   return (
@@ -34,6 +35,13 @@ export default function WebsiteScreen() {
         >
           <Ionicons name="refresh" size={20} color={colors.onSurface} />
         </Pressable>
+        <Pressable
+          testID="browser-btn"
+          onPress={() => Linking.openURL(current || uri).catch(() => {})}
+          style={styles.backBtn}
+        >
+          <Ionicons name="open-outline" size={20} color={colors.onSurface} />
+        </Pressable>
       </View>
       <View style={{ flex: 1 }}>
         <WebView
@@ -41,6 +49,15 @@ export default function WebsiteScreen() {
           source={{ uri }}
           style={{ flex: 1, backgroundColor: colors.surface }}
           onLoadEnd={() => setLoading(false)}
+          onNavigationStateChange={(nav) => setCurrent(nav.url)}
+          onShouldStartLoadWithRequest={(req) => {
+            // phone, e-mail and similar links are handed to the phone instead of the viewer
+            if (/^(tel|mailto|sms|whatsapp|intent|geo):/i.test(req.url)) {
+              Linking.openURL(req.url).catch(() => {});
+              return false;
+            }
+            return true;
+          }}
           setSupportMultipleWindows={false}
           allowsBackForwardNavigationGestures
         />

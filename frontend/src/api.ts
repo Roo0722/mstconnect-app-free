@@ -129,11 +129,13 @@ function firstImage(html: string): string | undefined {
   return undefined;
 }
 
+export type Span = { text: string; href?: string };
+
 export type Block =
   | { type: "h"; text: string }
-  | { type: "p"; text: string }
-  | { type: "li"; text: string }
-  | { type: "quote"; text: string }
+  | { type: "p"; text: string; spans: Span[] }
+  | { type: "li"; text: string; spans: Span[] }
+  | { type: "quote"; text: string; spans: Span[] }
   | { type: "img"; src: string };
 
 function inline(html: string) {
@@ -141,9 +143,88 @@ function inline(html: string) {
     .split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 }
 
+// ---------- links inside posts ----------
+// Only web, phone and e-mail links are kept. Anything else (javascript:, #anchors…) is dropped.
+function normalizeHref(raw: string): string | undefined {
+  const h = raw.trim();
+  if (!h || h.startsWith("#") || /^javascript:/i.test(h)) return undefined;
+  if (/^(https?:|mailto:|tel:)/i.test(h)) return h;
+  if (h.startsWith("//")) return `https:${h}`;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(h)) return undefined; // some other scheme
+  return absUrl(h);
+}
+
+const AUTOLINK_RE =
+  /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}|(?:\+?63|0)[\s-]?9\d{2}[\s-]?\d{3}[\s-]?\d{4})/g;
+
+// Turns web addresses, e-mail addresses and Philippine mobile numbers in plain text into links.
+function linkify(text: string): Span[] {
+  const out: Span[] = [];
+  let last = 0;
+  for (const m of text.matchAll(AUTOLINK_RE)) {
+    let hit = m[0];
+    const start = m.index ?? 0;
+    const trail = /[.,;:!?)\]]+$/.exec(hit)?.[0] ?? "";
+    if (trail) hit = hit.slice(0, hit.length - trail.length);
+    if (!hit) continue;
+    let href: string;
+    if (/^https?:\/\//i.test(hit)) href = hit;
+    else if (/^www\./i.test(hit)) href = `https://${hit}`;
+    else if (hit.includes("@")) href = `mailto:${hit}`;
+    else {
+      const digits = hit.replace(/[^\d]/g, "");
+      href = `tel:+63${digits.replace(/^(63|0)/, "")}`;
+    }
+    if (start > last) out.push({ text: text.slice(last, start) });
+    out.push({ text: hit, href });
+    last = start + hit.length;
+  }
+  if (last < text.length) out.push({ text: text.slice(last) });
+  return out;
+}
+
+// HTML (with <a> tags and <br>) -> text pieces, where link pieces carry an href.
+function spansOf(html: string): Span[] {
+  const spans: Span[] = [];
+  const plain = (frag: string) => {
+    // only <br> is a real line break; line breaks inside the HTML source are just spaces
+    const t = decode(frag.replace(/<br\s*\/?>/gi, "\u0001").replace(/<[^>]+>/g, ""))
+      .replace(/\s+/g, " ")
+      .replace(/ ?\u0001 ?/g, "\n")
+      .replace(/\n{2,}/g, "\n");
+    if (t) spans.push(...linkify(t));
+  };
+  const re = /<a\b[^>]*?\bhref=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    plain(html.slice(last, m.index));
+    const label = decode(m[2].replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "")).replace(/\s+/g, " ");
+    const href = normalizeHref(decode(m[1]));
+    if (label.trim()) spans.push(href ? { text: label, href } : { text: label });
+    last = re.lastIndex;
+  }
+  plain(html.slice(last));
+
+  // tidy the two ends and merge neighbouring plain pieces
+  if (spans.length) {
+    spans[0] = { ...spans[0], text: spans[0].text.replace(/^\s+/, "") };
+    const end = spans.length - 1;
+    spans[end] = { ...spans[end], text: spans[end].text.replace(/\s+$/, "") };
+  }
+  const merged: Span[] = [];
+  for (const sp of spans) {
+    if (!sp.text) continue;
+    const prev = merged[merged.length - 1];
+    if (prev && !prev.href && !sp.href) prev.text += sp.text;
+    else merged.push({ ...sp });
+  }
+  return merged;
+}
+
 // Reads one announcement/event page and returns just its content as simple blocks,
 // so the app can show it natively without the website's menus and footer.
-async function getArticle(url: string): Promise<Block[]> {
+async function getArticle(url: string): Promise<{ title: string; blocks: Block[] }> {
   const path = url.startsWith(BASE) ? url.slice(BASE.length) : url;
   let html = await getHtml(path);
   const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html);
@@ -154,6 +235,7 @@ async function getArticle(url: string): Promise<Block[]> {
   const blocks: Block[] = [];
   const seenImg = new Set<string>();
   let skippedTitle = false;
+  let pageTitle = "";
   const re = /<(h[1-4]|p|li|blockquote)\b[^>]*>([\s\S]*?)<\/\1>|<img\b[^>]*>/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(html))) {
@@ -167,19 +249,21 @@ async function getArticle(url: string): Promise<Block[]> {
     // images nested inside a block (e.g. <p><img></p>)
     const nested = firstImage(inner);
     if (nested && !seenImg.has(nested)) { seenImg.add(nested); blocks.push({ type: "img", src: nested }); }
-    const text = inline(inner);
+    const isText = tag === "p" || tag === "li" || tag === "blockquote";
+    const spans = isText ? spansOf(inner) : [];
+    const text = isText ? spans.map((sp) => sp.text).join("") : inline(inner);
     if (!text) continue;
     if (/^(skip to main content|back to\b|←|share\b)/i.test(text)) continue;
-    if (tag === "h1" && !skippedTitle) { skippedTitle = true; continue; }
+    if (tag === "h1" && !skippedTitle) { skippedTitle = true; pageTitle = text; continue; }
     if (text.length < 70 && DATE_RE.test(text) && /[·•|]/.test(text)) continue; // meta line
     if (tag.startsWith("h")) {
       if (blocks.some((b) => b.type === "p") && /^(more|related|other|latest|recent|all|read more|you may)\b/i.test(text)) break;
       blocks.push({ type: "h", text });
-    } else if (tag === "li") blocks.push({ type: "li", text });
-    else if (tag === "blockquote") blocks.push({ type: "quote", text });
-    else blocks.push({ type: "p", text });
+    } else if (tag === "li") blocks.push({ type: "li", text, spans });
+    else if (tag === "blockquote") blocks.push({ type: "quote", text, spans });
+    else blocks.push({ type: "p", text, spans });
   }
-  return blocks;
+  return { title: pageTitle, blocks };
 }
 
 const CATEGORIES = ["event", "recruitment", "training", "community"] as const;
