@@ -61,6 +61,20 @@ jobs:
             fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
           "
 
+      - name: Stamp build number into the app (used by the in-app update check)
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            const n = Number(process.env.BUILD_NUMBER);
+            app.expo.version = '1.0.' + n;
+            app.expo.android.versionCode = n;
+            app.expo.extra = { ...(app.expo.extra || {}), build: n };
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
@@ -106,4 +120,5 @@ jobs:
         with:
           tag_name: apk-${{ github.run_number }}
           name: MSTConnect APK #${{ github.run_number }}
+          body: ${{ github.event.head_commit.message }}
           files: frontend/MSTConnect.apk

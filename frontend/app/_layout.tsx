@@ -6,6 +6,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/src/components/error-boundary";
 import { queryClient } from "@/src/query-client";
 import { usePushSetup } from "@/src/push";
+import { UpdatePrompt } from "@/src/UpdatePrompt";
 
 // Disable logbox errors etc so that users can see the app
 // and agent works as expected.
@@ -21,6 +22,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <KeyboardProvider>
           <Stack screenOptions={{ headerShown: false }} />
+          <UpdatePrompt />
         </KeyboardProvider>
       </QueryClientProvider>
     </ErrorBoundary>

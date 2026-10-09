@@ -1,13 +1,33 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { useState } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
+import { checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
+import { openUpdate } from "../src/UpdatePrompt";
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const build = installedBuild();
+  const [checking, setChecking] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [found, setFound] = useState<UpdateInfo | null>(null);
+
+  const check = async () => {
+    setChecking(true);
+    setMsg("");
+    setFound(null);
+    const r = await checkForUpdate({ force: true });
+    setChecking(false);
+    if (r.status === "update") setFound(r.info);
+    else if (r.status === "current") setMsg("You have the latest version.");
+    else if (r.status === "error") setMsg("Couldn't check. Check your internet connection and try again.");
+    else setMsg("Update checks only work in the installed app.");
+  };
+
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -22,6 +42,11 @@ export default function AboutScreen() {
         <Text style={styles.brandLarge}>MSTConnect</Text>
         <Text style={styles.tagline}>Malitbog Sepak Takraw Community · Companion</Text>
 
+        <Text style={styles.version}>
+          Version {installedVersion() || "—"}
+          {build ? ` · build ${build}` : ""}
+        </Text>
+
         <View style={styles.freePill}>
           <Ionicons name="sparkles" size={12} color={colors.onBrandSecondary} />
           <Text style={styles.freePillText}>ALWAYS FREE</Text>
@@ -34,6 +59,30 @@ export default function AboutScreen() {
             countdown, announcements, enquiry, and courtside tools like a training timer, warm-up
             guide, score counter, and rules reference.
           </Text>
+        </View>
+
+        <Text style={styles.section}>APP UPDATES</Text>
+        <View style={styles.list}>
+          <Pressable testID="check-update" onPress={check} disabled={checking} style={styles.updateBtn}>
+            {checking ? (
+              <ActivityIndicator color={colors.onBrandPrimary} />
+            ) : (
+              <>
+                <Ionicons name="refresh" size={16} color={colors.onBrandPrimary} />
+                <Text style={styles.updateBtnText}>Check for updates</Text>
+              </>
+            )}
+          </Pressable>
+          {msg ? <Text style={styles.bulletText}>{msg}</Text> : null}
+          {found ? (
+            <View style={{ gap: 8 }}>
+              <Text style={styles.bulletText}>Build {found.build} is available.</Text>
+              <Pressable onPress={() => openUpdate(found)} style={styles.updateBtn}>
+                <Ionicons name="cloud-download-outline" size={16} color={colors.onBrandPrimary} />
+                <Text style={styles.updateBtnText}>Download and install</Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
 
         <Text style={styles.section}>WHO CAN JOIN MSTC</Text>
@@ -88,6 +137,12 @@ const styles = StyleSheet.create({
   title: { color: colors.onSurface, fontSize: 22, fontWeight: "900", letterSpacing: 0.3 },
   brandLarge: { color: colors.onSurface, fontSize: 36, fontWeight: "900", letterSpacing: 0.5 },
   tagline: { color: colors.muted, fontSize: 13, marginTop: 4, marginBottom: spacing.md },
+  version: { color: colors.finePrint, fontSize: 12, marginBottom: spacing.md },
+  updateBtn: {
+    flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.brandPrimary, borderRadius: radius.pill, paddingVertical: 11, paddingHorizontal: spacing.lg,
+  },
+  updateBtnText: { color: colors.onBrandPrimary, fontSize: 14, fontWeight: "800" },
   freePill: {
     alignSelf: "flex-start",
     flexDirection: "row", gap: 6, alignItems: "center",
