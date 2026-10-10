@@ -9,7 +9,8 @@ type Tool = { key: string; title: string; subtitle: string; icon: any; route: an
 
 const TOOLS: Tool[] = [
   { key: "timer", title: "Training Timer", subtitle: "Rounds & rest intervals", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
-  { key: "warmup", title: "Warm-Up Guide", subtitle: "5-min guided routine", icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
+  { key: "warmup", title: "Warm-Up Guide", subtitle: "24-step guided routine", icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
+  { key: "stretches", title: "Advanced Stretches", subtitle: "Splits & deep holds", icon: "body-outline", route: "/tools/stretches", accent: "red" },
   { key: "score", title: "Score Counter", subtitle: "Team A vs Team B", icon: "trophy-outline", route: "/tools/score", accent: "red" },
   { key: "rules", title: "Rules & Court", subtitle: "Quick reference", icon: "book-outline", route: "/tools/rules", accent: "yellow" },
 ];

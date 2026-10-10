@@ -19,6 +19,7 @@ MSTConnect puts the community's announcements, events and training tools in your
 ### Tools
 
 - **Training Timer** — work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60"). Beeps on the last 3 seconds of every period, a rising tone when work starts, a lower tone when rest starts, and a finish melody when the set ends.
+- **Advanced Stretches** — Butterfly, Seated Straddle, Seated Single-Leg Hamstring, Front Split and Middle Split, each with position, target muscles, how-to cues, an easier option and a gentle hold timer (full-screen). Best after training or on rest days. Edit `frontend/src/stretchData.ts` to change them.
 - **Warm-Up Guide** — a 24-step, roughly 24-minute routine (neck, shoulders, arms, trunk, ankles, calves, hips, legs, ball prep) with a slow, gentle rhythm: a soft tick for every rep or beat, a REP counter, a full-screen view, and a "NEXT" card that slides in about 5 seconds before each step ends. Tap the screen to show controls; the music-note button turns the rhythm tick off. To change steps, wording or timing, edit `frontend/src/warmupData.ts`.
 - **Score Counter** — Team A vs Team B, with editable team names.
 - **Rules & Court** — quick reference for rules and court layout.
