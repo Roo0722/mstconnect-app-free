@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -7,7 +7,20 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 
+// Manual rotate: portrait by default, landscape only when the user taps the button.
+function lockTo(landscape: boolean) {
+  try {
+    const so = require("expo-screen-orientation");
+    so.lockAsync(landscape ? so.OrientationLock.LANDSCAPE : so.OrientationLock.PORTRAIT_UP).catch(() => {});
+  } catch {}
+}
+
 export default function ScoreScreen() {
+  const [landscape, setLandscape] = useState(false);
+  useEffect(() => {
+    lockTo(landscape);
+  }, [landscape]);
+  useEffect(() => () => lockTo(false), []); // leaving the screen always returns to portrait
   useKeepAwake("mstc-score");
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -23,13 +36,16 @@ export default function ScoreScreen() {
     <View style={styles.root}>
       <Stack.Screen options={{ headerShown: false }} />
       <BackgroundGlow />
-      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.header, { paddingTop: landscape ? spacing.sm : insets.top + spacing.md }]}>
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Score Counter</Text>
         </View>
+        <Pressable testID="rotate-btn" style={styles.editBtn} onPress={() => setLandscape((v) => !v)} accessibilityLabel="Rotate">
+          <Ionicons name="phone-landscape-outline" size={18} color={landscape ? colors.brandSecondary : colors.onSurface} />
+        </Pressable>
         <Pressable
           testID="edit-names-btn"
           style={styles.editBtn}
@@ -39,7 +55,7 @@ export default function ScoreScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.body}>
+      <View style={[styles.body, landscape && { flexDirection: "row" }]}>
         <TeamPanel
           name={nameA}
           setName={setNameA}
@@ -50,7 +66,7 @@ export default function ScoreScreen() {
           accent={colors.brandPrimary}
           testPrefix="team-a"
         />
-        <View style={styles.vs}>
+        <View style={[styles.vs, landscape && { flexDirection: "column", paddingHorizontal: 0, gap: spacing.md }]}>
           <Text style={styles.vsText}>VS</Text>
           <Pressable testID="score-reset" style={styles.resetBtn} onPress={reset}>
             <Ionicons name="refresh" size={16} color={colors.onBrandSecondary} />
