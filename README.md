@@ -1,6 +1,6 @@
 <div align="center">
 
-MSTConnect
+#MSTConnect
 
 
 The companion app of the Malitbog Sepak Takraw Community (MSTC).
