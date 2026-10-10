@@ -3,7 +3,7 @@
 <h3>The companion app of the Malitbog Sepak Takraw Community (MSTC)</h3>
 <h3><em>Play. Reconnect. Pass It On.</em></h3>
 <a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">
-  <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20the%20latest%20APK-e0362c?style=for-the-badge&logo=android&logoColor=white&labelColor=0a0a0c" alt="Download the latest APK" height="56">
+  <img src="https://img.shields.io/badge/Download%20the%20latest%20APK-e0362c?style=for-the-badge&logo=android&logoColor=white&labelColor=0a0a0c" alt="Download the latest APK" height="56">
 </a>
 <br>
 
@@ -13,7 +13,7 @@
 
 
 
-<sub>Android · free · no account needed · all releases</sub>
+<sub><b><a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">Download MSTConnect.apk</a></b> · Android · free · no account needed · all releases</sub>
 
 <br>
 <img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
@@ -62,10 +62,10 @@ Score Counter — Team A vs Team B, with editable team names. Tap the rotate but
 Rules & Court — quick reference for rules and court layout.
 
 
-Sound can be muted with the speaker button in the Timer and Warm-Up headers (the choice is remembered). Sounds play even if the phone is on silent, and don't stop music that is already playing. Each cue also gives a small vibration.
+Sound can be muted with the speaker button in the Timer, Warm-Up and Stretches screens (the choice is remembered). Sounds play even if the phone is on silent, and don't stop music that is already playing. Each cue also gives a small vibration.
 
 
-Screen stays awake while any of the four tools is open, so the display doesn't dim in the middle of a drill or a match.
+Screen stays awake while any of the tools is open, so the display doesn't dim in the middle of a drill or a match.
 
 
 Enquiry
@@ -155,7 +155,7 @@ Requirements: Node.js 22+.
 
 cd frontend
 npm install --legacy-peer-deps
-npx expo install expo-audio expo-keep-awake expo-notifications -- --legacy-peer-deps
+npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar expo-screen-orientation -- --legacy-peer-deps
 npx expo start
 
 
@@ -179,7 +179,7 @@ Project structure
 └── frontend/                         # the Expo / React Native app
     ├── app/                          # screens (Expo Router)
     │   ├── (tabs)/                   #   Home, News, Tools, More
-    │   ├── tools/                    #   timer, warmup, score, rules
+    │   ├── tools/                    #   timer, warmup, stretches, score, rules
     │   ├── article.tsx               #   in-app post reader
     │   ├── website.tsx               #   in-app website viewer
     │   └── notifications.tsx · enquiry.tsx · about.tsx
@@ -210,7 +210,7 @@ In-app reading. Announcements open in a native in-app reader, and the website op
 Local notifications. Built from announcements on the device, with read state saved locally.
 New icon and splash screen using the MSTC logo (adaptive icon sized to stay inside the safe area).
 Sound and haptics on the Training Timer and Warm-Up Guide, with a mute button.
-Wake lock on all four tools (Timer, Warm-Up, Score, Rules) so the screen stays on.
+Wake lock on all tools (Timer, Warm-Up, Stretches, Score, Rules) so the screen stays on.
 Event details fixed. Event date, time (including 24-hour ranges like 07:00–11:30) and location are now read and shown correctly, and past events are no longer shown as "next".
 Pull to refresh on Home, News, Notifications and the post reader, plus a reload button in the website viewer.
 Push notifications (optional). New announcements, new events and 1-hour event reminders, through a free Cloudflare Worker + Firebase.
