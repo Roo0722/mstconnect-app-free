@@ -75,9 +75,8 @@ export default function TimerScreen() {
   if (full) {
     const perRound = preset.work + preset.rest;
     const done = (round - 1) * perRound + (isWork ? preset.work - remaining : preset.work + preset.rest - remaining);
-    const total = perRound * preset.rounds - preset.rest;
-    const lastWork = isWork && round >= preset.rounds;
-    const nextText = lastWork ? "FINISH" : isWork ? `REST · ${preset.rest} s` : `ROUND ${round + 1}`;
+    const total = perRound * preset.rounds; // the timer also rests after the last round
+    const nextText = isWork ? `REST · ${preset.rest} s` : round >= preset.rounds ? "FINISH" : `ROUND ${round + 1}`;
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />

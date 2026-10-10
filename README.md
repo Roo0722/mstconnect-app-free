@@ -1,4 +1,5 @@
 <div align="center">
+<<<<<<< HEAD
 <h1>MSTCONNECT</h1>
 <h3>The companion app of the Malitbog Sepak Takraw Community (MSTC)</h3>
 <h3><em>Play. Reconnect. Pass It On.</em></h3>
@@ -7,12 +8,49 @@
 </a>
 <br>
 
+=======
+
+<h1>MSTCONNECT</h1>
+
+<h3>The companion app of the Malitbog Sepak Takraw Community (MSTC)</h3>
+
+<h3><em>Play. Reconnect. Pass It On.</em></h3>
+
+<a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">
+  <img src="https://img.shields.io/badge/Download%20the%20latest%20APK-e0362c?style=for-the-badge&logo=android&logoColor=white&labelColor=0a0a0c" alt="Download the latest APK" height="56">
+</a>
+
+<br>
+
+[![Latest release](https://img.shields.io/github/v/release/Roo0722/mstconnect-app-free?style=flat-square&color=fcd116&labelColor=0a0a0c&label=latest)](https://github.com/Roo0722/mstconnect-app-free/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Roo0722/mstconnect-app-free/total?style=flat-square&color=e0362c&labelColor=0a0a0c)](https://github.com/Roo0722/mstconnect-app-free/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-fcd116?style=flat-square&labelColor=0a0a0c)](LICENSE)
+![Android](https://img.shields.io/badge/Android-free%20%26%20open-e0362c?style=flat-square&logo=android&logoColor=white&labelColor=0a0a0c)
+
+<sub><b><a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">Download MSTConnect.apk</a></b> · Android · free · no account needed · [all releases](https://github.com/Roo0722/mstconnect-app-free/releases)</sub>
+
+<br>
+
+<img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
+
+</div>
+>>>>>>> 7438a3b (timer-fullscreen-update-fix)
 
 
 
 
+<<<<<<< HEAD
+=======
+| Tab / screen | What it does |
+|---|---|
+| **Home** | Latest announcement, the next event (date, time, location and countdown; tap it for details), and quick shortcuts. Pull down to refresh. |
+| **News** | All MSTC announcements with photos, categories (Community, Recruitment, Training, Event) and pinned posts. Tap one to read the full post **inside the app**. Pull down to refresh. |
+| **Tools** | Five courtside tools, listed below. |
+| **More** | Notifications history, Enquiry form, the MSTC website (opens inside the app) and About. |
+>>>>>>> 7438a3b (timer-fullscreen-update-fix)
 
 
+<<<<<<< HEAD
 <sub><b><a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">Download MSTConnect.apk</a></b> · Android · free · no account needed · all releases</sub>
 
 <br>
@@ -20,6 +58,17 @@
 </div>
 
 MSTConnect puts the community's announcements, events and training tools in your pocket: a news feed, a training timer, a guided warm-up, a score counter and a quick rules reference. It is free to use, free to build and free to host: there is no database to pay for and no backend to run.
+=======
+- **Training Timer** — work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60"). Beeps on the last 3 seconds of every period, a rising tone when work starts, a lower tone when rest starts, and a finish melody when the set ends.
+- **Advanced Stretches** — Butterfly, Seated Straddle, Seated Single-Leg Hamstring, Front Split and Middle Split, each with position, target muscles, how-to cues, an easier option and a gentle hold timer (full-screen). Best after training or on rest days. Edit `frontend/src/stretchData.ts` to change them.
+- **Warm-Up Guide** — a 24-step, roughly 24-minute routine (neck, shoulders, arms, trunk, ankles, calves, hips, legs, ball prep) with a slow, gentle rhythm: a soft tick for every rep or beat, a REP counter, a full-screen view, and a "NEXT" card that slides in about 5 seconds before each step ends. Tap the screen to show controls; the music-note button turns the rhythm tick off. To change steps, wording or timing, edit `frontend/src/warmupData.ts`.
+- **Score Counter** — Team A vs Team B, with editable team names. Tap the rotate button for a landscape view (manual only; it returns to portrait when you leave).
+- **Rules & Court** — quick reference for rules and court layout.
+
+Sound can be muted with the speaker button in the Timer, Warm-Up and Stretches screens (the choice is remembered). Sounds play even if the phone is on silent, and don't stop music that is already playing. Each cue also gives a small vibration.
+
+**Screen stays awake** while any of the tools is open, so the display doesn't dim in the middle of a drill or a match.
+>>>>>>> 7438a3b (timer-fullscreen-update-fix)
 
 
 
@@ -202,6 +251,21 @@ What changed from the original Emergent build
 
 The app started life as an Emergent-generated project that depended on Emergent's hosting and credit-limited database. This version was reworked so it runs entirely free:
 
+<<<<<<< HEAD
+=======
+- **No Emergent, no database.** The FastAPI + MongoDB backend and the Cloudflare/D1 worker are no longer used. The app reads the MSTC platform's public pages instead.
+- **Free APK builds** with GitHub Actions (`build-apk.yml`), published automatically to Releases.
+- **New app identity.** App ID `com.mstc.mstconnect`, name *MSTConnect*.
+- **In-app reading.** Announcements open in a native in-app reader, and the website opens in an in-app viewer, so nothing depends on an external browser. News cards now show photos.
+- **Local notifications.** Built from announcements on the device, with read state saved locally.
+- **New icon and splash screen** using the MSTC logo (adaptive icon sized to stay inside the safe area).
+- **Sound and haptics** on the Training Timer and Warm-Up Guide, with a mute button.
+- **Wake lock** on all tools (Timer, Warm-Up, Stretches, Score, Rules) so the screen stays on.
+- **Event details fixed.** Event date, time (including 24-hour ranges like 07:00–11:30) and location are now read and shown correctly, and past events are no longer shown as "next".
+- **Pull to refresh** on Home, News, Notifications and the post reader, plus a reload button in the website viewer.
+- **Push notifications (optional).** New announcements, new events and 1-hour event reminders, through a free Cloudflare Worker + Firebase.
+- **Cleaner timer logic.** The timer and warm-up counting now lives in `timerLogic.ts` and drives the sound cues.
+>>>>>>> 7438a3b (timer-fullscreen-update-fix)
 
 No Emergent, no database. The FastAPI + MongoDB backend and the Cloudflare/D1 worker are no longer used. The app reads the MSTC platform's public pages instead.
 Free APK builds with GitHub Actions (build-apk.yml), published automatically to Releases.
