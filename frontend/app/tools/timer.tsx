@@ -8,6 +8,7 @@ import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue, useSoundEnabled } from "../../src/sound";
 import { tickTimer, type Phase } from "../../src/timerLogic";
+import { FullScreenTimer } from "../../src/FullScreenTimer";
 
 const PRESETS = [
   { label: "5 × 2' / 30\"", work: 120, rest: 30, rounds: 5 },
@@ -31,6 +32,7 @@ export default function TimerScreen() {
   const [remaining, setRemaining] = useState(preset.work);
   const [round, setRound] = useState(1);
   const [soundOn, setSoundOn] = useSoundEnabled();
+  const [full, setFull] = useState(false);
   useKeepAwake("mstc-timer"); // screen stays on while the timer screen is open
 
   // latest values for the 1-second interval (avoids stale closures)
@@ -69,6 +71,30 @@ export default function TimerScreen() {
   };
 
   const isWork = phase === "work";
+
+  if (full) {
+    const perRound = preset.work + preset.rest;
+    const done = (round - 1) * perRound + (isWork ? preset.work - remaining : preset.work + preset.rest - remaining);
+    const total = perRound * preset.rounds - preset.rest;
+    const lastWork = isWork && round >= preset.rounds;
+    const nextText = lastWork ? "FINISH" : isWork ? `REST · ${preset.rest} s` : `ROUND ${round + 1}`;
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <FullScreenTimer
+          eyebrow={`ROUND ${round} / ${preset.rounds}`}
+          title={isWork ? "WORK" : "REST"}
+          big={fmt(remaining)}
+          progress={Math.min(1, done / total)}
+          accent={isWork ? colors.brandPrimary : colors.brandSecondary}
+          nextUp={remaining <= 5 ? nextText : null}
+          running={running}
+          onToggle={toggle}
+          onClose={() => setFull(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -111,7 +137,9 @@ export default function TimerScreen() {
               color={running ? colors.onSurface : colors.onBrandPrimary}
             />
           </Pressable>
-          <View style={{ width: 48 }} />
+          <Pressable testID="timer-full" style={styles.ctrlSecondary} onPress={() => setFull(true)} accessibilityLabel="Full screen">
+            <Ionicons name="expand" size={20} color={colors.onSurface} />
+          </Pressable>
         </View>
 
         <Text style={styles.sectionLabel}>PRESETS</Text>
