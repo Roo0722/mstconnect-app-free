@@ -1,5 +1,5 @@
 export type Phase = "work" | "rest";
-export type Cue = "none" | "beep" | "start" | "rest" | "done";
+export type Cue = "none" | "beep" | "start" | "rest" | "done" | "tick" | "switch";
 export type TimerState = { phase: Phase; remaining: number; round: number };
 export type Preset = { work: number; rest: number; rounds: number };
 

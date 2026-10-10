@@ -5,10 +5,6 @@
 
 MSTConnect puts the community's announcements, events and training tools in your pocket: a news feed, a training timer, a guided warm-up, a score counter and a quick rules reference. It is **free to use, free to build and free to host**: there is no database to pay for and no backend to run.
 
-[![Download APK](https://img.shields.io/badge/Download-Latest_APK-2ea44f?style=for-the-badge&logo=android&logoColor=white)](../../releases/latest)
-
-<img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
-
 ---
 
 ## Features
@@ -23,7 +19,7 @@ MSTConnect puts the community's announcements, events and training tools in your
 ### Tools
 
 - **Training Timer** — work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60"). Beeps on the last 3 seconds of every period, a rising tone when work starts, a lower tone when rest starts, and a finish melody when the set ends.
-- **Warm-Up Guide** — an 18-step, roughly 11-minute head-to-toe routine, with a countdown per step, the same beeps and step-change tones, and previous/next controls.
+- **Warm-Up Guide** — a 24-step, roughly 24-minute routine (neck, shoulders, arms, trunk, ankles, calves, hips, legs, ball prep) with a slow, gentle rhythm: a soft tick for every rep or beat, a REP counter, a full-screen view, and a "NEXT" card that slides in about 5 seconds before each step ends. Tap the screen to show controls; the music-note button turns the rhythm tick off. To change steps, wording or timing, edit `frontend/src/warmupData.ts`.
 - **Score Counter** — Team A vs Team B, with editable team names.
 - **Rules & Court** — quick reference for rules and court layout.
 

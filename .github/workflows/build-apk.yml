@@ -47,7 +47,7 @@ jobs:
           npm pkg delete scripts.preinstall   # Emergent sandbox guard, not needed in CI
           npm install --legacy-peer-deps
           # sound + screen-awake packages, in the versions that match this Expo SDK
-          npx expo install expo-audio expo-keep-awake expo-notifications -- --legacy-peer-deps
+          npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar -- --legacy-peer-deps
 
       - name: Turn on push notifications (only if the Firebase secret is set)
         if: ${{ env.GOOGLE_SERVICES_JSON != '' }}

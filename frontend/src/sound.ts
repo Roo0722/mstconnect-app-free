@@ -11,10 +11,14 @@ const SOURCES = {
   start: require("../assets/sounds/start.wav"),
   rest: require("../assets/sounds/rest.wav"),
   done: require("../assets/sounds/done.wav"),
+  tick: require("../assets/sounds/tick.wav"),
+  switch: require("../assets/sounds/switch.wav"),
 } as const;
 
 const KEY = "mstc:sound";
+const TICK_KEY = "mstc:tick";
 let enabled = true;
+let tickOn = true;
 let modeSet = false;
 const players: Partial<Record<keyof typeof SOURCES, AudioPlayer>> = {};
 const listeners = new Set<() => void>();
@@ -23,6 +27,14 @@ AsyncStorage.getItem(KEY)
   .then((v) => {
     if (v === "0") {
       enabled = false;
+      listeners.forEach((f) => f());
+    }
+  })
+  .catch(() => {});
+AsyncStorage.getItem(TICK_KEY)
+  .then((v) => {
+    if (v === "0") {
+      tickOn = false;
       listeners.forEach((f) => f());
     }
   })
@@ -39,11 +51,16 @@ async function ensureMode() {
 
 export function cue(name: Cue) {
   if (name === "none") return;
-  try {
-    Haptics.impactAsync(
-      name === "beep" ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy,
-    ).catch(() => {});
-  } catch {}
+  if (name === "tick") {
+    // the soft rhythm tick: sound only, no vibration, and it has its own switch
+    if (!enabled || !tickOn) return;
+  } else {
+    try {
+      Haptics.impactAsync(
+        name === "beep" || name === "switch" ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Heavy,
+      ).catch(() => {});
+    } catch {}
+  }
   if (!enabled) return;
   ensureMode();
   try {
@@ -66,6 +83,24 @@ export function useSoundEnabled() {
   const set = (next: boolean) => {
     enabled = next;
     AsyncStorage.setItem(KEY, next ? "1" : "0").catch(() => {});
+    listeners.forEach((f) => f());
+  };
+  return [on, set] as const;
+}
+
+export function useTickEnabled() {
+  const [on, setOn] = useState(tickOn);
+  useEffect(() => {
+    const f = () => setOn(tickOn);
+    listeners.add(f);
+    f();
+    return () => {
+      listeners.delete(f);
+    };
+  }, []);
+  const set = (next: boolean) => {
+    tickOn = next;
+    AsyncStorage.setItem(TICK_KEY, next ? "1" : "0").catch(() => {});
     listeners.forEach((f) => f());
   };
   return [on, set] as const;
