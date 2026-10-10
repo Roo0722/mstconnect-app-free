@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
@@ -15,12 +15,29 @@ function lockTo(landscape: boolean) {
   } catch {}
 }
 
+// Hide / restore the Android navigation bar (best effort).
+function immersive(on: boolean) {
+  try {
+    const nb = require("expo-navigation-bar");
+    nb.setVisibilityAsync(on ? "hidden" : "visible").catch(() => {});
+  } catch {}
+}
+
 export default function ScoreScreen() {
   const [landscape, setLandscape] = useState(false);
   useEffect(() => {
     lockTo(landscape);
   }, [landscape]);
-  useEffect(() => () => lockTo(false), []); // leaving the screen always returns to portrait
+  useEffect(() => {
+    immersive(landscape); // true full screen in landscape: no status bar, no navigation bar
+  }, [landscape]);
+  useEffect(
+    () => () => {
+      lockTo(false); // leaving the screen always returns to portrait
+      immersive(false);
+    },
+    [],
+  );
   useKeepAwake("mstc-score");
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -33,10 +50,11 @@ export default function ScoreScreen() {
   const reset = () => { setA(0); setB(0); };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, landscape && { paddingLeft: Math.max(insets.left, spacing.lg), paddingRight: Math.max(insets.right, spacing.lg) }]}>
+      <StatusBar hidden={landscape} />
       <Stack.Screen options={{ headerShown: false }} />
       <BackgroundGlow />
-      <View style={[styles.header, { paddingTop: landscape ? spacing.sm : insets.top + spacing.md }]}>
+      <View style={[styles.header, { paddingTop: landscape ? Math.max(insets.top, spacing.sm) : insets.top + spacing.md, paddingHorizontal: landscape ? 0 : spacing.lg }]}>
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
@@ -55,7 +73,7 @@ export default function ScoreScreen() {
         </Pressable>
       </View>
 
-      <View style={[styles.body, landscape && { flexDirection: "row" }]}>
+      <View style={[styles.body, landscape && { flexDirection: "row", paddingHorizontal: 0, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <TeamPanel
           name={nameA}
           setName={setNameA}
@@ -64,9 +82,10 @@ export default function ScoreScreen() {
           onDec={() => setA((n) => Math.max(0, n - 1))}
           editing={editing}
           accent={colors.brandPrimary}
+          compact={landscape}
           testPrefix="team-a"
         />
-        <View style={[styles.vs, landscape && { flexDirection: "column", paddingHorizontal: 0, gap: spacing.md }]}>
+        <View style={[styles.vs, landscape && { flexDirection: "column", justifyContent: "center", paddingHorizontal: 0, gap: spacing.md, width: 96 }]}>
           <Text style={styles.vsText}>VS</Text>
           <Pressable testID="score-reset" style={styles.resetBtn} onPress={reset}>
             <Ionicons name="refresh" size={16} color={colors.onBrandSecondary} />
@@ -81,6 +100,7 @@ export default function ScoreScreen() {
           onDec={() => setB((n) => Math.max(0, n - 1))}
           editing={editing}
           accent={colors.brandSecondary}
+          compact={landscape}
           testPrefix="team-b"
         />
       </View>
@@ -89,8 +109,9 @@ export default function ScoreScreen() {
 }
 
 function TeamPanel({
-  name, setName, score, onInc, onDec, editing, accent, testPrefix,
+  name, setName, score, onInc, onDec, editing, accent, testPrefix, compact,
 }: {
+  compact?: boolean;
   name: string; setName: (s: string) => void; score: number;
   onInc: () => void; onDec: () => void; editing: boolean; accent: string; testPrefix: string;
 }) {
@@ -107,8 +128,8 @@ function TeamPanel({
         <Text style={styles.name} testID={`${testPrefix}-name`}>{name}</Text>
       )}
       <Pressable testID={`${testPrefix}-inc`} onPress={onInc} style={styles.scoreTap}>
-        <Text style={[styles.score, { color: accent }]} testID={`${testPrefix}-score`}>{score}</Text>
-        <Text style={styles.tapHint}>Tap to score</Text>
+        <Text style={[styles.score, { color: accent }, compact && { fontSize: 72 }]} testID={`${testPrefix}-score`}>{score}</Text>
+        {compact ? null : <Text style={styles.tapHint}>Tap to score</Text>}
       </Pressable>
       <View style={styles.panelRow}>
         <Pressable testID={`${testPrefix}-dec`} onPress={onDec} style={styles.decBtn}>
