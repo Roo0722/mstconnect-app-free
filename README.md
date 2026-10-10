@@ -1,11 +1,7 @@
 <div align="center">
-
-MSTConnect
-
-
-The companion app of the Malitbog Sepak Takraw Community (MSTC).
-Play. Reconnect. Pass It On.
-
+<h1>MSTCONNECT</h1>
+<h3>The companion app of the Malitbog Sepak Takraw Community (MSTC)</h3>
+<h3><em>Play. Reconnect. Pass It On.</em></h3>
 <a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">
   <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20the%20latest%20APK-e0362c?style=for-the-badge&logo=android&logoColor=white&labelColor=0a0a0c" alt="Download the latest APK" height="56">
 </a>
