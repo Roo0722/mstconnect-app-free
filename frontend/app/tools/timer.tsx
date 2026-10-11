@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
@@ -16,6 +17,16 @@ const PRESETS = [
   { label: "3 × 3' / 60\"", work: 180, rest: 60, rounds: 3 },
 ];
 
+const CUSTOM_KEY = "mstc:presets";
+type CustomPreset = { label: string; work: number; rest: number; rounds: number };
+const short = (sec: number) => {
+  const m = Math.floor(sec / 60);
+  const r = sec % 60;
+  if (m === 0) return `${r}"`;
+  return r === 0 ? `${m}'` : `${m}'${String(r).padStart(2, "0")}"`;
+};
+const labelFor = (work: number, rest: number, rounds: number) => `${rounds} × ${short(work)} / ${short(rest)}`;
+
 function fmt(sec: number) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -26,7 +37,47 @@ export default function TimerScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [presetIdx, setPresetIdx] = useState(0);
-  const preset = PRESETS[presetIdx];
+  const [custom, setCustom] = useState<CustomPreset[]>([]);
+  const [editor, setEditor] = useState<{ work: number; rest: number; rounds: number } | null>(null);
+  const allPresets = [...PRESETS, ...custom];
+  const preset = allPresets[presetIdx] ?? PRESETS[0];
+
+  useEffect(() => {
+    AsyncStorage.getItem(CUSTOM_KEY)
+      .then((v) => {
+        if (v) setCustom(JSON.parse(v));
+      })
+      .catch(() => {});
+  }, []);
+  const saveCustom = (next: CustomPreset[]) => {
+    setCustom(next);
+    AsyncStorage.setItem(CUSTOM_KEY, JSON.stringify(next)).catch(() => {});
+  };
+  const addCustom = () => {
+    if (!editor) return;
+    const label = labelFor(editor.work, editor.rest, editor.rounds);
+    const exists = allPresets.findIndex((p) => p.work === editor.work && p.rest === editor.rest && p.rounds === editor.rounds);
+    if (exists >= 0) {
+      setPresetIdx(exists);
+    } else {
+      saveCustom([...custom, { label, ...editor }]);
+      setPresetIdx(PRESETS.length + custom.length);
+    }
+    setEditor(null);
+  };
+  const removeCustom = (i: number) => {
+    Alert.alert("Delete preset?", allPresets[PRESETS.length + i].label, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          saveCustom(custom.filter((_, k) => k !== i));
+          setPresetIdx(0);
+        },
+      },
+    ]);
+  };
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState<Phase>("work");
   const [remaining, setRemaining] = useState(preset.work);
@@ -143,17 +194,32 @@ export default function TimerScreen() {
 
         <Text style={styles.sectionLabel}>PRESETS</Text>
         <View style={styles.presetsRow}>
-          {PRESETS.map((p, i) => (
+          {allPresets.map((p, i) => (
             <Pressable
-              key={p.label}
+              key={p.label + i}
               testID={`preset-${i}`}
               style={[styles.preset, i === presetIdx && styles.presetActive]}
               onPress={() => setPresetIdx(i)}
+              onLongPress={i >= PRESETS.length ? () => removeCustom(i - PRESETS.length) : undefined}
             >
               <Text style={[styles.presetText, i === presetIdx && styles.presetTextActive]}>{p.label}</Text>
             </Pressable>
           ))}
+          <Pressable style={styles.preset} onPress={() => setEditor(editor ? null : { work: 45, rest: 15, rounds: 6 })}>
+            <Text style={styles.presetText}>{editor ? "Cancel" : "+ Custom"}</Text>
+          </Pressable>
         </View>
+        {custom.length ? <Text style={styles.hint}>Tip: press and hold your own preset to delete it.</Text> : null}
+        {editor ? (
+          <View style={styles.editor}>
+            <Stepper label="Work" value={short(editor.work)} onMinus={() => setEditor({ ...editor, work: Math.max(5, editor.work - 5) })} onPlus={() => setEditor({ ...editor, work: Math.min(600, editor.work + 5) })} />
+            <Stepper label="Rest" value={short(editor.rest)} onMinus={() => setEditor({ ...editor, rest: Math.max(5, editor.rest - 5) })} onPlus={() => setEditor({ ...editor, rest: Math.min(300, editor.rest + 5) })} />
+            <Stepper label="Rounds" value={String(editor.rounds)} onMinus={() => setEditor({ ...editor, rounds: Math.max(1, editor.rounds - 1) })} onPlus={() => setEditor({ ...editor, rounds: Math.min(30, editor.rounds + 1) })} />
+            <Pressable style={styles.save} onPress={addCustom}>
+              <Text style={styles.saveText}>Save {labelFor(editor.work, editor.rest, editor.rounds)}</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -211,4 +277,23 @@ const styles = StyleSheet.create({
   presetActive: { backgroundColor: colors.brandSecondary, borderColor: colors.brandSecondary },
   presetText: { color: colors.onSurface, fontSize: 13, fontWeight: "700" },
   presetTextActive: { color: colors.onBrandSecondary },
+  hint: { color: colors.finePrint, fontSize: 11, alignSelf: "flex-start", marginTop: spacing.sm },
+  editor: { alignSelf: "stretch", backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginTop: spacing.md, gap: spacing.sm },
+  stepRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  stepLabel: { color: colors.muted, fontSize: 13, fontWeight: "700", width: 70 },
+  stepBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
+  stepValue: { color: colors.onSurface, fontSize: 18, fontWeight: "900", minWidth: 70, textAlign: "center" },
+  save: { backgroundColor: colors.brandPrimary, borderRadius: radius.pill, paddingVertical: 10, alignItems: "center", marginTop: spacing.xs },
+  saveText: { color: colors.onBrandPrimary, fontSize: 14, fontWeight: "800" },
 });
+
+function Stepper({ label, value, onMinus, onPlus }: { label: string; value: string; onMinus: () => void; onPlus: () => void }) {
+  return (
+    <View style={styles.stepRow}>
+      <Text style={styles.stepLabel}>{label}</Text>
+      <Pressable onPress={onMinus} style={styles.stepBtn}><Ionicons name="remove" size={18} color={colors.onSurface} /></Pressable>
+      <Text style={styles.stepValue}>{value}</Text>
+      <Pressable onPress={onPlus} style={styles.stepBtn}><Ionicons name="add" size={18} color={colors.onSurface} /></Pressable>
+    </View>
+  );
+}

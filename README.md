@@ -34,13 +34,13 @@ MSTConnect puts the community's announcements, events and training tools in your
 | Tab / screen | What it does |
 |---|---|
 | **Home** | Latest announcement, the next event (date, time, location and countdown; tap it for details), and quick shortcuts. Pull down to refresh. |
-| **News** | All MSTC announcements with photos, categories (Community, Recruitment, Training, Event) and pinned posts. Tap one to read the full post **inside the app**. Pull down to refresh. |
+| **News** | All MSTC announcements with photos, categories (Community, Recruitment, Training, Event) and pinned posts. Tap one to read the full post **inside the app**, then use the share button to send it to friends, and on events the calendar button to add it to your phone's calendar (with a 1-hour reminder). Pull down to refresh. |
 | **Tools** | Five courtside tools, listed below. |
 | **More** | Notifications history, Enquiry form, the MSTC website (opens inside the app) and About. |
 
 ### Tools
 
-- **Training Timer** — work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60"). Beeps on the last 3 seconds of every period, a rising tone when work starts, a lower tone when rest starts, and a finish melody when the set ends.
+- **Training Timer** — work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60") plus your own saved presets ("+ Custom"; press and hold one to delete it). Beeps on the last 3 seconds of every period, a rising tone when work starts, a lower tone when rest starts, and a finish melody when the set ends.
 - **Advanced Stretches** — Butterfly, Seated Straddle, Seated Single-Leg Hamstring, Front Split and Middle Split, each with position, target muscles, how-to cues, an easier option and a gentle hold timer (full-screen). Best after training or on rest days. Edit `frontend/src/stretchData.ts` to change them.
 - **Warm-Up Guide** — a 24-step, roughly 24-minute routine (neck, shoulders, arms, trunk, ankles, calves, hips, legs, ball prep) with a slow, gentle rhythm: a soft tick for every rep or beat, a REP counter, a full-screen view, and a "NEXT" card that slides in about 5 seconds before each step ends. Tap the screen to show controls; the music-note button turns the rhythm tick off. To change steps, wording or timing, edit `frontend/src/warmupData.ts`.
 - **Score Counter** — Team A vs Team B, with editable team names. Tap the rotate button for a landscape view (manual only; it returns to portrait when you leave).

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl, Share, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,41 @@ export default function ArticleScreen() {
   const { url, title, date, category } = useLocalSearchParams<{ url: string; title?: string; date?: string; category?: string }>();
   const q = useQuery({ queryKey: ["article", url], queryFn: () => api.getArticle(String(url)), enabled: !!url });
 
+  // for events: find the matching event so we know its start time and place
+  const isEvent = String(category) === "event";
+  const evQ = useQuery({ queryKey: ["events"], queryFn: api.listEvents, enabled: isEvent });
+  const same = (a?: string, b?: string) => !!a && !!b && a.replace(/\/$/, "") === b.replace(/\/$/, "");
+  const ev = (evQ.data ?? []).find((e) => same(e.url, String(url)));
+
+  const shownTitle0 = title || q.data?.title || "";
+  const share = async () => {
+    try {
+      const lines = [shownTitle0];
+      if (ev?.date) lines.push([ev.date, ev.time].filter(Boolean).join(" · "));
+      if (ev?.location) lines.push(`📍 ${ev.location}`);
+      lines.push(String(url));
+      await Share.share({ message: lines.join("\n") });
+    } catch {}
+  };
+  const addToCalendar = async () => {
+    if (!ev?.starts_at) return;
+    try {
+      const Cal = require("expo-calendar");
+      const start = new Date(ev.starts_at);
+      const end = new Date(start.getTime() + (ev.duration_minutes ?? 120) * 60_000);
+      await Cal.createEventInCalendarAsync({
+        title: ev.title || shownTitle0,
+        startDate: start,
+        endDate: end,
+        location: ev.location ?? undefined,
+        notes: `${String(url)}`,
+        alarms: [{ relativeOffset: -60 }],
+      });
+    } catch {
+      Alert.alert("Couldn't open the calendar", "Please check that a calendar app is installed on your phone.");
+    }
+  };
+
   const blocks: Block[] = q.data?.blocks ?? [];
   const shownTitle = title || q.data?.title || "";
 
@@ -26,7 +61,15 @@ export default function ArticleScreen() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.headerTitle}>{category ? String(category).toUpperCase() : "ANNOUNCEMENT"}</Text>
+        <Text style={[styles.headerTitle, { flex: 1 }]}>{category ? String(category).toUpperCase() : "ANNOUNCEMENT"}</Text>
+        {ev?.starts_at && !ev.past ? (
+          <Pressable testID="calendar-btn" onPress={addToCalendar} style={styles.backBtn} accessibilityLabel="Add to calendar">
+            <Ionicons name="calendar-outline" size={20} color={colors.onSurface} />
+          </Pressable>
+        ) : null}
+        <Pressable testID="share-btn" onPress={share} style={styles.backBtn} accessibilityLabel="Share">
+          <Ionicons name="share-social-outline" size={20} color={colors.onSurface} />
+        </Pressable>
       </View>
 
       <ScrollView
