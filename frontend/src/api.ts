@@ -50,12 +50,22 @@ async function getHtml(path: string): Promise<string> {
 }
 
 // ---------- tiny HTML helpers (no dependencies) ----------
-function decode(s: string) {
+const NAMED: Record<string, string> = {
+  nbsp: " ", quot: '"', apos: "'", lt: "<", gt: ">", hellip: "…", middot: "·",
+  larr: "←", rarr: "→", uarr: "↑", darr: "↓", harr: "↔", laquo: "«", raquo: "»",
+  lsaquo: "‹", rsaquo: "›", ndash: "–", mdash: "—", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+  bull: "•", copy: "©", reg: "®", trade: "™", deg: "°", times: "×", check: "✓", star: "★",
+};
+function decodeOnce(s: string) {
   return s
-    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0*39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&hellip;/g, "…").replace(/&middot;/g, "·")
     .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)));
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&([a-z]+);/gi, (m, n) => NAMED[n.toLowerCase()] ?? m);
+}
+function decode(s: string) {
+  // &amp; last, then once more, so double-escaped text like "&amp;larr;" also becomes "←"
+  const a = decodeOnce(s).replace(/&amp;/g, "&");
+  return decodeOnce(a);
 }
 function clean(html: string) {
   return decode(html.replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
