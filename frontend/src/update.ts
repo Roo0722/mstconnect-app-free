@@ -23,17 +23,17 @@ export function installedBuild(): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// "beta" builds (separate app, see build-beta.yml) follow beta pre-releases; the normal app follows the latest stable release.
+export function channel(): "stable" | "beta" {
+  return (Constants.expoConfig?.extra as { channel?: string } | undefined)?.channel === "beta" ? "beta" : "stable";
+}
+
 export function installedVersion(): string {
   return Constants.expoConfig?.version ?? "";
 }
 
-async function fetchLatest(): Promise<UpdateInfo | null> {
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
-    headers: { Accept: "application/vnd.github+json" },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const r = await res.json();
-  const build = Number(String(r.tag_name ?? "").replace(/\D/g, ""));
+function toInfo(r: any): UpdateInfo | null {
+  const build = Number(String(r?.tag_name ?? "").replace(/\D/g, ""));
   if (!build) return null;
   const apk = (r.assets ?? []).find((a: { name?: string }) => /\.apk$/i.test(a.name ?? ""));
   return {
@@ -43,6 +43,24 @@ async function fetchLatest(): Promise<UpdateInfo | null> {
     apkUrl: apk?.browser_download_url ?? r.html_url,
     pageUrl: r.html_url,
   };
+}
+
+async function fetchLatest(): Promise<UpdateInfo | null> {
+  const headers = { Accept: "application/vnd.github+json" };
+  if (channel() === "beta") {
+    // newest beta pre-release (tags like beta-12)
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const list: any[] = await res.json();
+    const betas = list
+      .filter((r) => !r.draft && r.prerelease && /^beta-\d+$/.test(String(r.tag_name)))
+      .map(toInfo)
+      .filter((x): x is UpdateInfo => !!x);
+    return betas.sort((a, b) => b.build - a.build)[0] ?? null;
+  }
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return toInfo(await res.json());
 }
 
 export async function checkForUpdate(opts: { force?: boolean } = {}): Promise<CheckResult> {

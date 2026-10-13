@@ -5,7 +5,7 @@ import { Stack, useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
-import { checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
+import { channel, checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
 import { openUpdate } from "../src/UpdatePrompt";
 
 export default function AboutScreen() {
@@ -43,7 +43,7 @@ export default function AboutScreen() {
         <Text style={styles.tagline}>Malitbog Sepak Takraw Community · Companion</Text>
 
         <Text style={styles.version}>
-          Version {installedVersion() || "—"}
+          Version {installedVersion() || "—"}{channel() === "beta" ? " (beta)" : ""}
           {build ? ` · build ${build}` : ""}
         </Text>
 
