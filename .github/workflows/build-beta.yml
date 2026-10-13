@@ -1,0 +1,142 @@
+name: Build Android BETA APK
+
+on:
+  push:
+    branches: [beta]
+    paths: ["frontend/**", ".github/workflows/build-beta.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to publish the APK as a GitHub Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      EXPO_PUBLIC_API_URL: https://mstc-platform.thereal-jnjnbnd.workers.dev
+      EXPO_NO_TELEMETRY: "1"
+      # address of the free push Worker (see push-worker/SETUP.md); harmless if it isn't deployed yet
+      EXPO_PUBLIC_PUSH_URL: https://mstc-push.thereal-jnjnbnd.workers.dev
+      # optional: Firebase config for the BETA app id (com.mstc.mstconnect.beta); builds fine without it
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON_BETA }}
+      # optional signing key: leave the secrets unset and the build uses the default debug key
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The GitHub runner already includes the Android SDK; just accept its licenses.
+      - name: Accept Android SDK licenses
+        working-directory: .
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install dependencies
+        run: |
+          npm pkg delete scripts.preinstall   # Emergent sandbox guard, not needed in CI
+          npm install --legacy-peer-deps
+          # sound + screen-awake packages, in the versions that match this Expo SDK
+          npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar expo-screen-orientation expo-calendar -- --legacy-peer-deps
+
+      - name: Turn on push notifications (only if the beta Firebase secret is set)
+        if: ${{ env.GOOGLE_SERVICES_JSON != '' }}
+        run: |
+          printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.android.googleServicesFile = './google-services.json';
+            app.expo.plugins = [...(app.expo.plugins || []), ['expo-notifications', { color: '#e0362c' }]];
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
+      # The beta app is a separate app: own id, own name, own deep-link scheme, own update channel.
+      # It installs next to the normal app and never overwrites it.
+      - name: Make this build the BETA app
+        run: |
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.name = 'MSTConnect Beta';
+            app.expo.scheme = 'mstconnect-beta';
+            app.expo.android.package = 'com.mstc.mstconnect.beta';
+            app.expo.ios = { ...(app.expo.ios || {}), bundleIdentifier: 'com.mstc.mstconnect.beta' };
+            app.expo.extra = { ...(app.expo.extra || {}), channel: 'beta' };
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
+      - name: Stamp build number into the app (used by the in-app update check)
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            const n = Number(process.env.BUILD_NUMBER);
+            app.expo.version = '1.0.' + n;
+            app.expo.android.versionCode = n;
+            app.expo.extra = { ...(app.expo.extra || {}), build: n };
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Sign with your own keystore (optional)
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
+          {
+            echo "MSTC_STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}"
+            echo "MSTC_KEY_ALIAS=${{ secrets.KEY_ALIAS }}"
+            echo "MSTC_KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}"
+          } >> android/gradle.properties
+          python3 - <<'PY'
+          import re
+          p="android/app/build.gradle"
+          s=open(p).read()
+          s=s.replace("signingConfigs {", """signingConfigs {
+                  release {
+                      storeFile file('release.keystore')
+                      storePassword MSTC_STORE_PASSWORD
+                      keyAlias MSTC_KEY_ALIAS
+                      keyPassword MSTC_KEY_PASSWORD
+                  }""",1)
+          s=re.sub(r"(buildTypes\s*\{.*?release\s*\{[^}]*?)signingConfig signingConfigs\.debug",
+                   r"\1signingConfig signingConfigs.release", s, count=1, flags=re.S)
+          open(p,"w").write(s)
+          PY
+
+      - name: Build release APK
+        working-directory: frontend/android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk MSTConnect-Beta.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MSTConnect-Beta-apk
+          path: frontend/MSTConnect-Beta.apk
+
+      # A PRE-release: GitHub's "latest release" ignores it, so the normal app never offers it as an update.
+      - name: Publish GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: beta-${{ github.run_number }}
+          name: MSTConnect BETA #${{ github.run_number }}
+          prerelease: true
+          make_latest: "false"
+          body: ${{ github.event.head_commit.message }}
+          files: frontend/MSTConnect-Beta.apk
