@@ -9,6 +9,7 @@ import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue } from "../../src/sound";
 import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
 import { STRETCHES, SAFETY, RULES, PLAN_NOTE, PROGRESSION, PROGRESSION_NOTE } from "../../src/stretchData";
+import { segLook, isRestLabel, isSwitch } from "../../src/sideColors";
 import { advance, isPrep, locate, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
 
 const EVENTS = STRETCHES.map(stepEvents);
@@ -62,10 +63,17 @@ export default function StretchesScreen() {
   const w = locate(st, pos.elapsed);
   const total = stepMs(st);
   const isReady = isPrep(st.segments[w.seg]);
-  const isRest = st.segments[w.seg].label === "Rest";
-  const badge = isReady ? "GET INTO POSITION" : isRest ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : "HOLD GENTLY";
-  const lines = isReady ? [st.position, st.easier] : isRest ? ["Shake out, breathe slowly.", "Next set starts soon."] : st.cues;
-  const pills: Pill[] = st.segments.map((g, i) => ({ label: g.label ?? "", state: i < w.seg ? "done" : i === w.seg ? "current" : "todo" }));
+  const curSeg = st.segments[w.seg];
+  const isRest = isRestLabel(curSeg.label);
+  const look = segLook(curSeg.label);
+  const nextSeg = st.segments[w.seg + 1];
+  const segEnd = st.segments.slice(0, w.seg + 1).reduce((a, g) => a + Math.round(g.seconds * 1000), 0);
+  const badge = isReady ? "GET INTO POSITION" : isSwitch(curSeg.label) ? "SWITCH SIDES" : isRest ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : "HOLD GENTLY";
+  const lines = isReady ? [st.position, st.easier] : isSwitch(curSeg.label) ? [nextSeg ? `Next: ${nextSeg.label}` : "Switch sides", "Reset your position and breathe."] : isRest ? ["Shake out, breathe slowly.", "Next set starts soon."] : st.cues;
+  const pills: Pill[] = st.segments
+    .map((g, i) => ({ g, i }))
+    .filter((x) => !isSwitch(x.g.label))
+    .map(({ g, i }) => ({ label: g.label ?? "", state: i < w.seg ? "done" : i === w.seg ? "current" : "todo" }));
 
   if (full) {
     return (
@@ -74,13 +82,15 @@ export default function StretchesScreen() {
         <FullScreenTimer
           eyebrow={`FLEXIBILITY ${pos.idx + 1} / ${STRETCHES.length}`}
           title={st.name}
-          big={fmt(total - pos.elapsed)}
+          big={fmt(isSwitch(curSeg.label) ? segEnd - pos.elapsed : total - pos.elapsed)}
           badge={badge}
           pills={pills}
           lines={lines}
           purpose={isReady || isRest ? undefined : SAFETY}
           progress={pos.elapsed / total}
           nextUp={null}
+          accent={look?.accent}
+          tint={look?.tint}
           running={running}
           onToggle={() => setRunning((v) => !v)}
           onClose={() => {

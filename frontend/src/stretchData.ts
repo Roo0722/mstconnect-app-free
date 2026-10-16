@@ -38,14 +38,15 @@ export const PROGRESSION_NOTE =
 
 const ready: Segment = { label: "Get ready", seconds: 8 };
 const rest = (seconds: number): Segment => ({ label: "Rest", seconds });
+const swap: Segment = { label: "Switch sides", seconds: 5 }; // short pause when changing legs
 // two sets of one hold
 const twoSets = (hold: number, restS = 10): Segment[] => [ready, { label: "Set 1", seconds: hold }, rest(restS), { label: "Set 2", seconds: hold }];
 // two sets, one block per leg, alternating legs
 const twoSetsSides = (seconds: number, reps?: number): Segment[] => [
   ready,
-  { label: "Right · set 1", seconds, reps },
-  { label: "Left · set 1", seconds, reps },
-  { label: "Right · set 2", seconds, reps },
+  { label: "Right · set 1", seconds, reps }, swap,
+  { label: "Left · set 1", seconds, reps }, swap,
+  { label: "Right · set 2", seconds, reps }, swap,
   { label: "Left · set 2", seconds, reps },
 ];
 

@@ -49,8 +49,8 @@ MSTConnect puts the community's announcements, events and training tools in your
 
 | Tool | What it does |
 |---|---|
-| **Training Timer** | Work/rest rounds with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60") and your own saved presets (**+ Custom**; press and hold one to delete it). Full-screen view with a **NEXT** card shortly before each change. |
-| **Warm-Up Guide** | 23 steps in four phases, about 14 minutes, with a 5-second **Get ready** before every exercise, a soft tick for every rep or beat, a rep counter, a full-screen view and a **NEXT** card about 5 seconds before each step ends. |
+| **HIIT Interval Timer** | Work/rest rounds with a 5-second get-ready, with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60") and your own saved presets (**+ Custom**; press and hold one to delete it). Full-screen view with a **NEXT** card shortly before each change. |
+| **Warm-Up Guide** | 24 steps in four phases, about 15 minutes, with a pause between sides, green (right) and red (left) screens, amber rest, and a final 30-second rest before training, with a 5-second **Get ready** before every exercise, a soft tick for every rep or beat, a rep counter, a full-screen view and a **NEXT** card about 5 seconds before each step ends. |
 | **Flexibility & Kicking Mobility** | 7 exercises, 2 sets each: Butterfly, Seated Straddle, Single-Leg Hamstring, Active Straight-Leg Raises, Supported Front and Middle Split progressions and a Hip Hinge. Position, target muscles, how-to cues, an easier option, a set/rest timer, a progression plan and safety rules. Best after training or on rest days. |
 | **Score Counter** | Team A vs Team B with editable names, and a manual **landscape** button (it returns to portrait when you leave). |
 | **Rules & Court** | Quick reference for rules and court layout. |

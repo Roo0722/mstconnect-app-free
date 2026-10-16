@@ -17,6 +17,7 @@ export type FullScreenProps = {
   purpose?: string;
   progress: number; // 0..1 of the whole session
   accent?: string;
+  tint?: string; // optional solid background colour (e.g. green for right, red for left)
   nextUp?: string | null; // when set, the "NEXT" card slides in
   running: boolean;
   showTickToggle?: boolean;
@@ -83,7 +84,7 @@ export function FullScreenTimer(p: FullScreenProps) {
   }, [!!p.nextUp]);
 
   return (
-    <Pressable style={[styles.root, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]} onPress={poke}>
+    <Pressable style={[styles.root, p.tint ? { backgroundColor: p.tint } : null, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]} onPress={poke}>
       <StatusBar hidden />
       <View style={styles.bar}>
         <View style={[styles.barFill, { width: `${Math.round(Math.min(1, Math.max(0, p.progress)) * 100)}%`, backgroundColor: accent }]} />

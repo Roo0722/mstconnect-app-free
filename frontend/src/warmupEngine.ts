@@ -8,8 +8,8 @@ export type Routine = { segments: Seg[] }[];
 // A short "Get ready" gap at the start of every exercise, so you can change position before it begins.
 export const PREP_LABEL = "Get ready";
 export const PREP_SECONDS = 5;
-export const withPrep = <T extends { segments: Seg[] }>(steps: T[], seconds = PREP_SECONDS): T[] =>
-  steps.map((s) => ({ ...s, segments: [{ label: PREP_LABEL, seconds }, ...s.segments] }));
+export const withPrep = <T extends { segments: Seg[]; noPrep?: boolean }>(steps: T[], seconds = PREP_SECONDS): T[] =>
+  steps.map((s) => (s.noPrep ? s : { ...s, segments: [{ label: PREP_LABEL, seconds }, ...s.segments] }));
 export const isPrep = (g?: Seg) => g?.label === PREP_LABEL;
 
 export const stepMs = (s: { segments: Seg[] }) => Math.round(s.segments.reduce((a, g) => a + g.seconds, 0) * 1000);
@@ -85,7 +85,8 @@ export function advance(
     }
     idx += 1;
     elapsed = 0;
-    cues.push(isPrep(steps[idx].segments[0]) ? "switch" : "start");
+    const first = steps[idx].segments[0];
+    cues.push(isPrep(first) ? "switch" : first.label === "Rest" ? "rest" : "start");
     if (remainingDelta === 0) return { pos: { idx, elapsed: 0 }, cue: strongest(cues), finished: false };
   }
 }

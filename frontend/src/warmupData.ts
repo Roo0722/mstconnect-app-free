@@ -14,14 +14,19 @@ export type WarmupPhase =
   | "Sepak takraw preparation";
 export type WarmupStep = {
   name: string;
+  noPrep?: boolean; // skip the "Get ready" gap in front of this step (used for the final rest)
   phase: WarmupPhase;
   purpose?: string;
   details: string[];
   segments: Segment[];
 };
 
+// A short pause when changing sides, so each side is done with good quality.
+const SWITCH_SECONDS = 4;
+const swap: Segment = { label: "Switch sides", seconds: SWITCH_SECONDS };
 const side = (seconds: number, reps?: number): Segment[] => [
   { label: "Right side", seconds, reps },
+  swap,
   { label: "Left side", seconds, reps },
 ];
 
@@ -77,7 +82,7 @@ export const WARMUP: WarmupStep[] = [
   // Phase 3: ankle, calf and hip preparation
   { name: "Ankle Rotations", phase: A, purpose: "Keep your ankles stable.",
     details: ["Lift one foot and circle the ankle slowly.", "Move through a comfortable range."],
-    segments: [{ label: "Right ankle", seconds: 12, reps: 6 }, { label: "Left ankle", seconds: 12, reps: 6 }] },
+    segments: [{ label: "Right ankle", seconds: 12, reps: 6 }, swap, { label: "Left ankle", seconds: 12, reps: 6 }] },
   { name: "Basic Calf Raises", phase: A,
     details: ["Feet straight. Rise onto your toes, lower slowly.", "Rise and lower under control. About 10 reps."],
     segments: [{ seconds: 30, reps: 10 }] },
@@ -93,7 +98,7 @@ export const WARMUP: WarmupStep[] = [
   { name: "Hip Openers", phase: A,
     details: ["Lift the knee, open it out to the side, and lower.", "Open each hip smoothly without forcing the range."],
     segments: side(14, 5) },
-  { name: "Lateral Lunges (Groin Focus)", phase: A,
+  { name: "Lateral Lunges", phase: A,
     details: ["Step wide, sit back over one leg, keep the other leg straight.", "Keep it shallow at first and go a little deeper each rep. 5 reps per side."],
     segments: side(15, 5) },
   { name: "World's Greatest Dynamic Stretch", phase: A,
@@ -104,11 +109,13 @@ export const WARMUP: WarmupStep[] = [
   { name: "Leg Swings", phase: S,
     details: ["Hold a support if needed.", "Begin with small swings and increase gradually.", "Forward-back, then side-to-side, on each leg."],
     segments: [
-      { label: "Right: front-back", seconds: 16, reps: 8 }, { label: "Right: side-side", seconds: 16, reps: 8 },
+      { label: "Right: front-back", seconds: 16, reps: 8 }, { label: "Right: side-side", seconds: 16, reps: 8 }, swap,
       { label: "Left: front-back", seconds: 16, reps: 8 }, { label: "Left: side-side", seconds: 16, reps: 8 }] },
   { name: "Controlled Kicks", phase: S,
-    details: ["Start low, then gradually increase height.", "No maximum-height kicks yet. 5 per leg."],
-    segments: side(15, 5) },
+    details: ["Low (about knee height), then middle (about waist), then high (a comfortable height).", "2 kicks at each height, right leg first, then left.", "Stay controlled; no maximum-height kicks yet."],
+    segments: [
+      { label: "Right · low", seconds: 6, reps: 2 }, { label: "Right · middle", seconds: 6, reps: 2 }, { label: "Right · high", seconds: 6, reps: 2 }, swap,
+      { label: "Left · low", seconds: 6, reps: 2 }, { label: "Left · middle", seconds: 6, reps: 2 }, { label: "Left · high", seconds: 6, reps: 2 }] },
   { name: "Alternating Ball Touches", phase: S,
     details: ["Alternate feet with light, controlled contacts.", "Keep a calm, steady rhythm."],
     segments: [{ seconds: 40, beat: 2 }] },
@@ -118,4 +125,7 @@ export const WARMUP: WarmupStep[] = [
   { name: "Transition into Basic Ball Work", phase: S,
     details: ["Start with easy passing and control.", "Progress to quicker, more game-like exchanges."],
     segments: [{ seconds: 90 }] },
+  { name: "Rest, then Training", phase: S, noPrep: true, purpose: "The warm-up is done. Get ready for training (HIIT).",
+    details: ["Rest and breathe slowly.", "Drink some water and shake out your legs.", "When the timer ends, you are ready to train."],
+    segments: [{ label: "Rest", seconds: 30 }] },
 ];

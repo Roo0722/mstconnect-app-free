@@ -8,8 +8,8 @@ import { BackgroundGlow } from "../../src/BackgroundGlow";
 type Tool = { key: string; title: string; subtitle: string; icon: any; route: any; accent: "red" | "yellow" };
 
 const TOOLS: Tool[] = [
-  { key: "timer", title: "Training Timer", subtitle: "Rounds & rest intervals", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
-  { key: "warmup", title: "Warm-Up Guide", subtitle: "23-step guided routine", icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
+  { key: "timer", title: "HIIT Interval Timer", subtitle: "Work / rest rounds", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
+  { key: "warmup", title: "Warm-Up Guide", subtitle: "Guided routine, about 15 min", icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
   { key: "stretches", title: "Flexibility & Kicking", subtitle: "Splits, active leg control & hinge", icon: "body-outline", route: "/tools/stretches", accent: "red" },
   { key: "score", title: "Score Counter", subtitle: "Team A vs Team B", icon: "trophy-outline", route: "/tools/score", accent: "red" },
   { key: "rules", title: "Rules & Court", subtitle: "Quick reference", icon: "book-outline", route: "/tools/rules", accent: "yellow" },

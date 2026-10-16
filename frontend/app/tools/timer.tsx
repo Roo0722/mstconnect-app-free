@@ -173,7 +173,7 @@ export default function TimerScreen() {
         <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
-        <Text style={[styles.title, { flex: 1 }]}>Training Timer</Text>
+        <Text style={[styles.title, { flex: 1 }]}>HIIT Interval Timer</Text>
         <Pressable testID="sound-toggle" onPress={() => setSoundOn(!soundOn)} style={styles.backBtn}>
           <Ionicons name={soundOn ? "volume-high" : "volume-mute"} size={20} color={soundOn ? colors.brandSecondary : colors.muted} />
         </Pressable>

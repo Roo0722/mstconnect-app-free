@@ -8,13 +8,14 @@ import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue } from "../../src/sound";
 import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
+import { segLook, isRestLabel, isSwitch } from "../../src/sideColors";
 import { WARMUP, WARMUP_SAFETY } from "../../src/warmupData";
 import { advance, isPrep, locate, stepEvents, stepMs, withPrep, type Pos } from "../../src/warmupEngine";
 
 const NEXT_WARNING_MS = 5000;
 // every exercise gets a short "Get ready" gap in front of it
 const STEPS = withPrep(WARMUP);
-const EVENTS = STEPS.map((s, i) => stepEvents(s, { followedByPrep: i < STEPS.length - 1 }));
+const EVENTS = STEPS.map((s, i) => stepEvents(s, { followedByPrep: i < STEPS.length - 1 && isPrep(STEPS[i + 1].segments[0]) }));
 const TOTAL_MS = STEPS.reduce((a, s) => a + stepMs(s), 0);
 const STARTS = STEPS.reduce<number[]>((a, s, i) => (a.push(i ? a[i - 1] + stepMs(STEPS[i - 1]) : 0), a), []);
 
@@ -30,6 +31,7 @@ export default function WarmupScreen() {
   const [running, setRunning] = useState(false);
   const [pos, setPos] = useState<Pos>({ idx: 0, elapsed: 0 });
   const [open, setOpen] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
   const posRef = useRef(pos);
   posRef.current = pos;
   useKeepAwake("mstc-warmup");
@@ -46,6 +48,7 @@ export default function WarmupScreen() {
       setPos(r.pos);
       cue(r.cue);
       if (r.finished) {
+        setFinished(true);
         setRunning(false);
         setFull(false);
       }
@@ -57,6 +60,7 @@ export default function WarmupScreen() {
     const p = { idx, elapsed: 0 };
     posRef.current = p;
     setPos(p);
+    setFinished(false);
     setFull(true);
     setRunning(true);
     cue("start");
@@ -71,12 +75,17 @@ export default function WarmupScreen() {
   const step = STEPS[pos.idx];
   const w = locate(step, pos.elapsed);
   const total = stepMs(step);
-  const getReady = isPrep(step.segments[w.seg]);
+  const cur = step.segments[w.seg];
+  const getReady = isPrep(cur);
+  const pause = isRestLabel(cur.label); // "Switch sides" pause or the final rest
+  const look = segLook(cur.label);
   const prepMs = stepMs({ segments: [step.segments[0]] });
-  // during "Get ready" show its own countdown; afterwards the time left in the exercise
-  const left = getReady ? prepMs - pos.elapsed : total - pos.elapsed;
+  // during "Get ready" / a pause show its own countdown; otherwise the time left in the exercise
+  const segEnd = step.segments.slice(0, w.seg + 1).reduce((a, g) => a + Math.round(g.seconds * 1000), 0);
+  const left = getReady ? prepMs - pos.elapsed : pause ? segEnd - pos.elapsed : total - pos.elapsed;
+  const nextSeg = step.segments[w.seg + 1];
   const nextStep = STEPS[pos.idx + 1];
-  const shown = step.segments.map((g, i) => ({ g, i })).filter((x) => !isPrep(x.g));
+  const shown = step.segments.map((g, i) => ({ g, i })).filter((x) => !isPrep(x.g) && !isSwitch(x.g.label));
   const pills: Pill[] = shown.map(({ g, i }) => ({
     label: g.label ?? "",
     state: i < w.seg ? "done" : i === w.seg ? "current" : "todo",
@@ -101,12 +110,14 @@ export default function WarmupScreen() {
           eyebrow={`${step.phase.toUpperCase()} · STEP ${pos.idx + 1} / ${WARMUP.length}`}
           title={step.name}
           big={fmt(left)}
-          badge={getReady ? "GET READY" : w.rep ? `REP ${w.rep} / ${w.reps}` : step.segments[w.seg].beat ? "FOLLOW THE BEAT" : w.hold ? "HOLD" : undefined}
+          badge={getReady ? "GET READY" : isSwitch(cur.label) ? "SWITCH SIDES" : pause ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : step.segments[w.seg].beat ? "FOLLOW THE BEAT" : w.hold ? "HOLD" : undefined}
           pills={hasLabels ? pills : undefined}
-          lines={step.details}
+          lines={isSwitch(cur.label) ? [nextSeg ? `Next: ${nextSeg.label}` : "Switch sides", "Reset your position and breathe."] : step.details}
           purpose={step.purpose}
           progress={(STARTS[pos.idx] + pos.elapsed) / TOTAL_MS}
-          nextUp={!getReady && left <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
+          nextUp={!getReady && !pause && left <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
+          accent={look?.accent}
+          tint={look?.tint}
           running={running}
           showTickToggle
           onToggle={() => setRunning((v) => !v)}
@@ -135,6 +146,12 @@ export default function WarmupScreen() {
         </View>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}>
+        {finished ? (
+          <View style={styles.done}>
+            <Ionicons name="checkmark-circle" size={22} color="#34d399" />
+            <Text style={styles.doneText}>Warm-up complete. You are ready for training (HIIT).</Text>
+          </View>
+        ) : null}
         <Pressable style={styles.start} onPress={() => begin(0)}>
           <Ionicons name="play" size={22} color={colors.onBrandPrimary} />
           <Text style={styles.startText}>Start warm-up</Text>
@@ -187,6 +204,8 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.muted, fontSize: 12, marginTop: 2 },
   start: { flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: colors.brandPrimary, borderRadius: radius.lg, paddingVertical: 16, marginBottom: spacing.md },
   startText: { color: colors.onBrandPrimary, fontSize: 17, fontWeight: "900" },
+  done: { flexDirection: "row", gap: 8, alignItems: "center", backgroundColor: "rgba(52, 211, 153, 0.15)", borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
+  doneText: { flex: 1, color: colors.onSurface, fontSize: 14, fontWeight: "700" },
   section: { color: colors.brandSecondary, fontSize: 11, fontWeight: "900", letterSpacing: 1.6, marginTop: spacing.lg, marginBottom: spacing.sm },
   row: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
   rowTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
