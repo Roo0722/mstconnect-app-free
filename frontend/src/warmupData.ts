@@ -7,9 +7,14 @@
 // Keep rep lengths slow (2 s or more) so the rhythm stays gentle and easy to follow.
 
 export type Segment = { label?: string; seconds: number; reps?: number; beat?: number };
+export type WarmupPhase =
+  | "Raise body temperature"
+  | "Upper body & trunk mobility"
+  | "Ankle, calf & hip preparation"
+  | "Sepak takraw preparation";
 export type WarmupStep = {
   name: string;
-  phase: "Raise" | "Neck & shoulders" | "Arms & trunk" | "Legs & hips" | "Ball prep";
+  phase: WarmupPhase;
   purpose?: string;
   details: string[];
   segments: Segment[];
@@ -20,67 +25,97 @@ const side = (seconds: number, reps?: number): Segment[] => [
   { label: "Left side", seconds, reps },
 ];
 
+// Safety notes shown at the bottom of the warm-up list.
+export const WARMUP_SAFETY = [
+  "You should feel warmer, more mobile and ready, not exhausted.",
+  "Keep neck movements gentle and avoid full circular neck rolls.",
+  "Stop any movement that causes sharp pain, pinching or increasing discomfort.",
+  "Increase kick height, speed and jumping intensity gradually.",
+  "If you are already warm from earlier activity, shorten the early stages rather than rushing the sport-specific preparation.",
+];
+
+const R = "Raise body temperature" as const;
+const U = "Upper body & trunk mobility" as const;
+const A = "Ankle, calf & hip preparation" as const;
+const S = "Sepak takraw preparation" as const;
+
 export const WARMUP: WarmupStep[] = [
-  { name: "Light March / Jog in Place", phase: "Raise", purpose: "Raise your heart rate and body temperature.",
-    details: ["March or jog lightly on the spot.", "Swing your arms easily.", "Stay relaxed; tick = one step."],
-    segments: [{ seconds: 120, beat: 2 }] },
-  { name: "Cervical Rotation Stretch (Active Neck Rotation)", phase: "Neck & shoulders",
-    details: ["Look straight ahead.", "Turn your head to the right, return to center and pause.", "Turn to the left, return to center and pause.", "Right + left = one rep."],
-    segments: [{ seconds: 48, reps: 8 }] },
-  { name: "Neck Flexion & Extension", phase: "Neck & shoulders",
-    details: ["Lower your chin toward your chest, hold briefly, return to center.", "Look up gently, hold briefly, return to center.", "Never force the movement."],
-    segments: [{ seconds: 48, reps: 6 }] },
-  { name: "Head Rotations", phase: "Neck & shoulders",
-    details: ["Roll your head in slow, small half-circles.", "Keep shoulders down and relaxed."],
-    segments: [{ seconds: 36, reps: 6 }] },
-  { name: "Levator Scapulae Stretch", phase: "Neck & shoulders",
-    details: ["Turn your head about 45° and look down toward your armpit.", "Gently ease the head down. Hold, then switch sides."],
-    segments: side(20) },
-  { name: "Upper Trapezius Stretch", phase: "Neck & shoulders",
-    details: ["Tilt your ear toward your shoulder (about 90°).", "Keep the opposite shoulder low. Hold, then switch sides."],
-    segments: side(20) },
-  { name: "Shoulder & Arm Circles", phase: "Neck & shoulders", purpose: "Loosen the shoulders.",
-    details: ["10 circles forward, then 10 circles backward.", "Make them big, smooth and slow."],
-    segments: [{ label: "Forward", seconds: 30, reps: 10 }, { label: "Backward", seconds: 30, reps: 10 }] },
-  { name: "Cross-Body Shoulder Stretch", phase: "Arms & trunk",
-    details: ["Bring one arm across your chest.", "Hold it with the other arm. Hold, then switch sides."],
-    segments: side(20) },
-  { name: "Triceps Stretch", phase: "Arms & trunk",
+  // Phase 1: raise body temperature
+  { name: "Light March / Jog in Place", phase: R, purpose: "Raise your heart rate and body temperature.",
+    details: ["Start slowly, then increase the pace until you feel warmer.", "Swing your arms easily.", "Stay relaxed; tick = one step."],
+    segments: [{ seconds: 75, beat: 2 }] },
+  { name: "Cervical Rotation Stretch", phase: R,
+    details: ["Turn your head gently from side to side.", "Pause at center between turns.", "Avoid forcing the neck. Right + left = one rep."],
+    segments: [{ seconds: 20, reps: 4 }] },
+  { name: "Neck Flexion & Extension", phase: R,
+    details: ["Nod gently up and down within a comfortable range.", "Never force the movement."],
+    segments: [{ seconds: 20, reps: 4 }] },
+
+  // Phase 2: upper body and trunk mobility
+  { name: "Levator Scapulae Stretch", phase: U,
+    details: ["Turn your head about 45° and look down toward your armpit.", "Use light tension only. Hold, then switch sides."],
+    segments: side(10) },
+  { name: "Upper Trapezius Stretch", phase: U,
+    details: ["Tilt your ear toward your shoulder.", "Keep the shoulders relaxed. Skip if uncomfortable."],
+    segments: side(10) },
+  { name: "Shoulder & Arm Circles", phase: U, purpose: "Loosen the shoulders.",
+    details: ["Start with small circles and gradually make them bigger.", "Forward first, then backward."],
+    segments: [{ label: "Forward", seconds: 10, reps: 4 }, { label: "Backward", seconds: 10, reps: 4 }] },
+  { name: "Cross-Body Shoulder Stretch", phase: U,
+    details: ["Bring one arm across your chest.", "Keep the shoulder relaxed; don't pull aggressively.", "Hold, then switch sides."],
+    segments: side(10) },
+  { name: "Triceps Stretch (optional)", phase: U, purpose: "Lower priority for sepak takraw. Keep it brief or skip it.",
     details: ["Raise one arm and bend the elbow behind your head.", "Gently press the elbow with the other hand. Hold, then switch sides."],
-    segments: side(20) },
-  { name: "Chest and Biceps Opener Stretch", phase: "Arms & trunk",
-    details: ["Interlace your fingers behind your back.", "Straighten the arms and lift them slightly.", "Open the chest. Hold."],
-    segments: [{ seconds: 20 }] },
-  { name: "Trunk Rotations", phase: "Arms & trunk",
-    details: ["Feet shoulder-width apart, hips facing forward.", "Rotate your upper body slowly, 10 reps per side."],
-    segments: side(30, 10) },
-  { name: "Ankle Rotations", phase: "Legs & hips", purpose: "Keep your ankles stable.",
-    details: ["Lift one foot and circle the ankle slowly.", "8 circles each direction, both feet."],
+    segments: side(10) },
+  { name: "Chest and Biceps Opener", phase: U,
+    details: ["Interlace your fingers behind your back.", "Use controlled arm openings instead of long holds."],
+    segments: [{ seconds: 20, reps: 5 }] },
+  { name: "Trunk Rotations", phase: U,
+    details: ["Feet shoulder-width apart, hips facing forward.", "Rotate smoothly without twisting forcefully."],
+    segments: side(12, 4) },
+
+  // Phase 3: ankle, calf and hip preparation
+  { name: "Ankle Rotations", phase: A, purpose: "Keep your ankles stable.",
+    details: ["Lift one foot and circle the ankle slowly.", "Move through a comfortable range."],
+    segments: [{ label: "Right ankle", seconds: 12, reps: 6 }, { label: "Left ankle", seconds: 12, reps: 6 }] },
+  { name: "Basic Calf Raises", phase: A,
+    details: ["Feet straight. Rise onto your toes, lower slowly.", "Rise and lower under control. About 10 reps."],
+    segments: [{ seconds: 30, reps: 10 }] },
+  { name: "Internal Rotation Calf Raises", phase: A,
+    details: ["Toes slightly inward, knees aligned comfortably.", "Rise and lower slowly. About 8 reps."],
+    segments: [{ seconds: 24, reps: 8 }] },
+  { name: "External Rotation Calf Raises", phase: A,
+    details: ["Toes slightly outward without forcing the ankles.", "Rise and lower slowly. About 8 reps."],
+    segments: [{ seconds: 24, reps: 8 }] },
+  { name: "High Knee March", phase: A,
+    details: ["Lift the knees progressively higher.", "Keep your balance; tick = one step."],
+    segments: [{ seconds: 25, beat: 1.5 }] },
+  { name: "Hip Openers", phase: A,
+    details: ["Lift the knee, open it out to the side, and lower.", "Open each hip smoothly without forcing the range."],
+    segments: side(14, 5) },
+  { name: "Lateral Lunges (Groin Focus)", phase: A,
+    details: ["Step wide, sit back over one leg, keep the other leg straight.", "Keep it shallow at first and go a little deeper each rep. 5 reps per side."],
+    segments: side(15, 5) },
+  { name: "World's Greatest Dynamic Stretch", phase: A,
+    details: ["Lunge forward, elbow toward the instep, rotate and reach up.", "Move smoothly. 3 reps per side."],
+    segments: side(21, 3) },
+
+  // Phase 4: sepak takraw preparation
+  { name: "Leg Swings", phase: S,
+    details: ["Hold a support if needed.", "Begin with small swings and increase gradually.", "Forward-back, then side-to-side, on each leg."],
     segments: [
-      { label: "Right: clockwise", seconds: 16, reps: 8 }, { label: "Right: counter", seconds: 16, reps: 8 },
-      { label: "Left: clockwise", seconds: 16, reps: 8 }, { label: "Left: counter", seconds: 16, reps: 8 }] },
-  { name: "Basic Calf Raises", phase: "Legs & hips",
-    details: ["Feet straight. Rise onto your toes, lower slowly.", "20 reps."], segments: [{ seconds: 40, reps: 20 }] },
-  { name: "Internal Rotation Calf Raises", phase: "Legs & hips",
-    details: ["Toes pointing inward, heels apart.", "Rise and lower slowly. 20 reps."], segments: [{ seconds: 40, reps: 20 }] },
-  { name: "External Rotation Calf Raises", phase: "Legs & hips",
-    details: ["Heels inward with toes outward.", "Rise and lower slowly. 20 reps."], segments: [{ seconds: 40, reps: 20 }] },
-  { name: "High Knee March", phase: "Legs & hips",
-    details: ["March, lifting each knee toward hip height.", "Stand tall; tick = one step."], segments: [{ seconds: 60, beat: 1.5 }] },
-  { name: "Hip Openers", phase: "Legs & hips",
-    details: ["Lift the knee, open it out to the side, and lower.", "10 reps per side."], segments: side(40, 10) },
-  { name: "Lateral Lunges (Groin Focus)", phase: "Legs & hips",
-    details: ["Step wide, sit back over one leg, keep the other leg straight.", "Chest up. 10 reps per side."], segments: side(40, 10) },
-  { name: "World's Greatest Dynamic Stretch", phase: "Legs & hips",
-    details: ["Lunge forward, elbow toward the instep, rotate and reach up.", "Do the reps on one side, then switch."], segments: side(36, 6) },
-  { name: "Leg Swings", phase: "Legs & hips",
-    details: ["Hold something for balance.", "Swing the leg forward and back, 10 each leg."], segments: side(30, 10) },
-  { name: "Controlled Kicks", phase: "Ball prep",
-    details: ["Kick low and under control, building height slowly.", "10 per side."], segments: side(30, 10) },
-  { name: "Alternating Ball Touches", phase: "Ball prep",
-    details: ["Soft touches, right foot then left.", "Keep a calm, steady rhythm."], segments: [{ seconds: 90, beat: 2 }] },
-  { name: "Soft Landing Taps", phase: "Ball prep", purpose: "Quiet landings and good balance.",
-    details: ["Small hops, landing softly and quietly.", "Bend knees and hips on every landing."], segments: [{ seconds: 90, beat: 2 }] },
-  { name: "Transition into Basic Ball Work", phase: "Ball prep",
-    details: ["Start your basic ball work at an easy pace.", "Slowly build up to normal speed."], segments: [{ seconds: 90 }] },
+      { label: "Right: front-back", seconds: 16, reps: 8 }, { label: "Right: side-side", seconds: 16, reps: 8 },
+      { label: "Left: front-back", seconds: 16, reps: 8 }, { label: "Left: side-side", seconds: 16, reps: 8 }] },
+  { name: "Controlled Kicks", phase: S,
+    details: ["Start low, then gradually increase height.", "No maximum-height kicks yet. 5 per leg."],
+    segments: side(15, 5) },
+  { name: "Alternating Ball Touches", phase: S,
+    details: ["Alternate feet with light, controlled contacts.", "Keep a calm, steady rhythm."],
+    segments: [{ seconds: 40, beat: 2 }] },
+  { name: "Soft Landing Taps", phase: S, purpose: "Quiet landings and good balance.",
+    details: ["Low-impact small hops, landing quietly.", "Knees comfortably bent. Avoid repeated high jumps."],
+    segments: [{ seconds: 18, reps: 6 }] },
+  { name: "Transition into Basic Ball Work", phase: S,
+    details: ["Start with easy passing and control.", "Progress to quicker, more game-like exchanges."],
+    segments: [{ seconds: 90 }] },
 ];

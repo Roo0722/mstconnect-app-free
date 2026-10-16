@@ -33,6 +33,8 @@ function fmt(sec: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const LEAD_SECONDS = 5; // "Get ready" before round 1
+
 export default function TimerScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -82,13 +84,15 @@ export default function TimerScreen() {
   const [phase, setPhase] = useState<Phase>("work");
   const [remaining, setRemaining] = useState(preset.work);
   const [round, setRound] = useState(1);
+  // "Get ready" countdown before round 1: null = not started yet, 0 = finished
+  const [lead, setLead] = useState<number | null>(null);
   const [soundOn, setSoundOn] = useSoundEnabled();
   const [full, setFull] = useState(false);
   useKeepAwake("mstc-timer"); // screen stays on while the timer screen is open
 
   // latest values for the 1-second interval (avoids stale closures)
-  const latest = useRef({ phase, remaining, round, preset });
-  latest.current = { phase, remaining, round, preset };
+  const latest = useRef({ phase, remaining, round, preset, lead });
+  latest.current = { phase, remaining, round, preset, lead };
 
   useEffect(() => {
     reset();
@@ -99,18 +103,31 @@ export default function TimerScreen() {
     if (!running) return;
     const id = setInterval(() => {
       const cur = latest.current;
+      if (cur.lead !== null && cur.lead > 0) {
+        const l = cur.lead - 1;
+        latest.current = { ...cur, lead: l };
+        setLead(l);
+        cue(l === 0 ? "start" : l <= 3 ? "beep" : "none");
+        return;
+      }
       const res = tickTimer({ phase: cur.phase, remaining: cur.remaining, round: cur.round }, cur.preset);
       setPhase(res.state.phase);
       setRemaining(res.state.remaining);
       setRound(res.state.round);
-      if (res.finished) setRunning(false);
+      if (res.finished) {
+        setRunning(false);
+        setLead(null);
+      }
       cue(res.cue);
     }, 1000);
     return () => clearInterval(id);
   }, [running]);
 
   const toggle = () => {
-    if (!running && phase === "work" && round === 1 && remaining === preset.work) cue("start");
+    if (!running && lead === null) {
+      setLead(LEAD_SECONDS); // fresh start: count in first
+      cue("switch");
+    }
     setRunning((v) => !v);
   };
 
@@ -119,8 +136,10 @@ export default function TimerScreen() {
     setPhase("work");
     setRound(1);
     setRemaining(preset.work);
+    setLead(null);
   };
 
+  const getReady = lead !== null && lead > 0;
   const isWork = phase === "work";
 
   if (full) {
@@ -133,11 +152,11 @@ export default function TimerScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <FullScreenTimer
           eyebrow={`ROUND ${round} / ${preset.rounds}`}
-          title={isWork ? "WORK" : "REST"}
-          big={fmt(remaining)}
+          title={getReady ? "GET READY" : isWork ? "WORK" : "REST"}
+          big={fmt(getReady ? lead! : remaining)}
           progress={Math.min(1, done / total)}
-          accent={isWork ? colors.brandPrimary : colors.brandSecondary}
-          nextUp={remaining <= 5 ? nextText : null}
+          accent={isWork || getReady ? colors.brandPrimary : colors.brandSecondary}
+          nextUp={getReady ? "ROUND 1" : remaining <= 5 ? nextText : null}
           running={running}
           onToggle={toggle}
           onClose={() => setFull(false)}
@@ -161,10 +180,10 @@ export default function TimerScreen() {
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl, alignItems: "center" }}>
         <Text style={styles.phase} testID="timer-phase">
-          {isWork ? "WORK" : "REST"}
+          {getReady ? "GET READY" : isWork ? "WORK" : "REST"}
         </Text>
-        <View style={[styles.ring, { borderColor: isWork ? colors.brandPrimary : colors.brandSecondary }]}>
-          <Text style={styles.time} testID="timer-time">{fmt(remaining)}</Text>
+        <View style={[styles.ring, { borderColor: isWork || getReady ? colors.brandPrimary : colors.brandSecondary }]}>
+          <Text style={styles.time} testID="timer-time">{fmt(getReady ? lead! : remaining)}</Text>
           <Text style={styles.round}>ROUND {round} / {preset.rounds}</Text>
         </View>
 

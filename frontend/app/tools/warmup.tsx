@@ -8,13 +8,15 @@ import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue } from "../../src/sound";
 import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
-import { WARMUP } from "../../src/warmupData";
-import { advance, locate, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
+import { WARMUP, WARMUP_SAFETY } from "../../src/warmupData";
+import { advance, isPrep, locate, stepEvents, stepMs, withPrep, type Pos } from "../../src/warmupEngine";
 
 const NEXT_WARNING_MS = 5000;
-const EVENTS = WARMUP.map(stepEvents);
-const TOTAL_MS = WARMUP.reduce((a, s) => a + stepMs(s), 0);
-const STARTS = WARMUP.reduce<number[]>((a, s, i) => (a.push(i ? a[i - 1] + stepMs(WARMUP[i - 1]) : 0), a), []);
+// every exercise gets a short "Get ready" gap in front of it
+const STEPS = withPrep(WARMUP);
+const EVENTS = STEPS.map((s, i) => stepEvents(s, { followedByPrep: i < STEPS.length - 1 }));
+const TOTAL_MS = STEPS.reduce((a, s) => a + stepMs(s), 0);
+const STARTS = STEPS.reduce<number[]>((a, s, i) => (a.push(i ? a[i - 1] + stepMs(STEPS[i - 1]) : 0), a), []);
 
 const fmt = (ms: number) => {
   const s = Math.ceil(ms / 1000);
@@ -39,7 +41,7 @@ export default function WarmupScreen() {
       const now = Date.now();
       const delta = Math.min(500, now - last); // never jump after the app was frozen
       last = now;
-      const r = advance(WARMUP, posRef.current, delta, (i) => EVENTS[i]);
+      const r = advance(STEPS, posRef.current, delta, (i) => EVENTS[i]);
       posRef.current = r.pos;
       setPos(r.pos);
       cue(r.cue);
@@ -60,22 +62,26 @@ export default function WarmupScreen() {
     cue("start");
   };
   const jump = (d: -1 | 1) => {
-    const idx = Math.max(0, Math.min(WARMUP.length - 1, pos.idx + d));
+    const idx = Math.max(0, Math.min(STEPS.length - 1, pos.idx + d));
     const p = { idx, elapsed: 0 };
     posRef.current = p;
     setPos(p);
   };
 
-  const step = WARMUP[pos.idx];
+  const step = STEPS[pos.idx];
   const w = locate(step, pos.elapsed);
   const total = stepMs(step);
-  const left = total - pos.elapsed;
-  const nextStep = WARMUP[pos.idx + 1];
-  const pills: Pill[] = step.segments.map((g, i) => ({
+  const getReady = isPrep(step.segments[w.seg]);
+  const prepMs = stepMs({ segments: [step.segments[0]] });
+  // during "Get ready" show its own countdown; afterwards the time left in the exercise
+  const left = getReady ? prepMs - pos.elapsed : total - pos.elapsed;
+  const nextStep = STEPS[pos.idx + 1];
+  const shown = step.segments.map((g, i) => ({ g, i })).filter((x) => !isPrep(x.g));
+  const pills: Pill[] = shown.map(({ g, i }) => ({
     label: g.label ?? "",
     state: i < w.seg ? "done" : i === w.seg ? "current" : "todo",
   }));
-  const hasLabels = step.segments.some((g) => g.label);
+  const hasLabels = shown.some((x) => x.g.label);
 
   const groups = useMemo(() => {
     const out: { phase: string; items: number[] }[] = [];
@@ -95,12 +101,12 @@ export default function WarmupScreen() {
           eyebrow={`${step.phase.toUpperCase()} · STEP ${pos.idx + 1} / ${WARMUP.length}`}
           title={step.name}
           big={fmt(left)}
-          badge={w.rep ? `REP ${w.rep} / ${w.reps}` : step.segments[w.seg].beat ? "FOLLOW THE BEAT" : w.hold ? "HOLD" : undefined}
+          badge={getReady ? "GET READY" : w.rep ? `REP ${w.rep} / ${w.reps}` : step.segments[w.seg].beat ? "FOLLOW THE BEAT" : w.hold ? "HOLD" : undefined}
           pills={hasLabels ? pills : undefined}
           lines={step.details}
           purpose={step.purpose}
           progress={(STARTS[pos.idx] + pos.elapsed) / TOTAL_MS}
-          nextUp={left <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
+          nextUp={!getReady && left <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
           running={running}
           showTickToggle
           onToggle={() => setRunning((v) => !v)}
@@ -162,6 +168,12 @@ export default function WarmupScreen() {
             })}
           </View>
         ))}
+        <Text style={styles.section}>SAFETY CHECKS</Text>
+        <View style={styles.row}>
+          {WARMUP_SAFETY.map((t, k) => (
+            <Text key={k} style={styles.detail}>• {t}</Text>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );

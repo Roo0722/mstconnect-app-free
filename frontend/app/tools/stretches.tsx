@@ -8,8 +8,8 @@ import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue } from "../../src/sound";
 import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
-import { STRETCHES, SAFETY } from "../../src/stretchData";
-import { advance, locate, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
+import { STRETCHES, SAFETY, RULES, PLAN_NOTE, PROGRESSION, PROGRESSION_NOTE } from "../../src/stretchData";
+import { advance, isPrep, locate, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
 
 const EVENTS = STRETCHES.map(stepEvents);
 const fmt = (ms: number) => {
@@ -61,7 +61,10 @@ export default function StretchesScreen() {
   const st = STRETCHES[pos.idx];
   const w = locate(st, pos.elapsed);
   const total = stepMs(st);
-  const isReady = st.segments[w.seg].label === "Get ready";
+  const isReady = isPrep(st.segments[w.seg]);
+  const isRest = st.segments[w.seg].label === "Rest";
+  const badge = isReady ? "GET INTO POSITION" : isRest ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : "HOLD GENTLY";
+  const lines = isReady ? [st.position, st.easier] : isRest ? ["Shake out, breathe slowly.", "Next set starts soon."] : st.cues;
   const pills: Pill[] = st.segments.map((g, i) => ({ label: g.label ?? "", state: i < w.seg ? "done" : i === w.seg ? "current" : "todo" }));
 
   if (full) {
@@ -69,13 +72,13 @@ export default function StretchesScreen() {
       <>
         <Stack.Screen options={{ headerShown: false }} />
         <FullScreenTimer
-          eyebrow={`ADVANCED STRETCH ${pos.idx + 1} / ${STRETCHES.length}`}
+          eyebrow={`FLEXIBILITY ${pos.idx + 1} / ${STRETCHES.length}`}
           title={st.name}
           big={fmt(total - pos.elapsed)}
-          badge={isReady ? "GET INTO POSITION" : "HOLD GENTLY"}
+          badge={badge}
           pills={pills}
-          lines={isReady ? [st.position, st.easier] : st.cues}
-          purpose={isReady ? undefined : SAFETY}
+          lines={lines}
+          purpose={isReady || isRest ? undefined : SAFETY}
           progress={pos.elapsed / total}
           nextUp={null}
           running={running}
@@ -98,8 +101,8 @@ export default function StretchesScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Advanced Stretches</Text>
-          <Text style={styles.subtitle}>Best after training or on rest days</Text>
+          <Text style={styles.title}>Flexibility & Kicking Mobility</Text>
+          <Text style={styles.subtitle}>{STRETCHES.length} exercises · 2 sets each · after training or on rest days</Text>
         </View>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}>
@@ -109,14 +112,11 @@ export default function StretchesScreen() {
         </View>
         {STRETCHES.map((s, i) => {
           const isOpen = open === i;
-          const hold = s.segments.filter((g) => g.label !== "Get ready");
           return (
             <Pressable key={s.name} style={styles.card} onPress={() => setOpen(isOpen ? null : i)}>
               <View style={styles.cardTop}>
                 <Text style={styles.name}>{s.name}</Text>
-                <Text style={styles.time}>
-                  {hold.length > 1 ? `${hold[0].seconds} s / side` : `${hold[0].seconds} s`}
-                </Text>
+                <Text style={styles.time}>{s.prescription}</Text>
               </View>
               <Text style={styles.targets}>Targets: {s.targets}</Text>
               {isOpen ? (
@@ -131,13 +131,30 @@ export default function StretchesScreen() {
                   <Text style={styles.detail}>{s.easier}</Text>
                   <Pressable style={styles.start} onPress={() => begin(i)}>
                     <Ionicons name="play" size={16} color={colors.onBrandPrimary} />
-                    <Text style={styles.startText}>Start hold timer</Text>
+                    <Text style={styles.startText}>Start timer</Text>
                   </Pressable>
                 </View>
               ) : null}
             </Pressable>
           );
         })}
+        <Text style={styles.section}>PROGRESSION PLAN</Text>
+        <View style={styles.card}>
+          {PROGRESSION.map((p) => (
+            <View key={p.weeks} style={styles.planRow}>
+              <Text style={styles.planWeeks}>{p.weeks}</Text>
+              <Text style={styles.planGoal}>{p.goal}</Text>
+            </View>
+          ))}
+          <Text style={styles.targets}>{PROGRESSION_NOTE}</Text>
+        </View>
+        <Text style={styles.section}>IMPORTANT RULES</Text>
+        <View style={styles.card}>
+          {RULES.map((r, k) => (
+            <Text key={k} style={styles.detail}>• {r}</Text>
+          ))}
+        </View>
+        <Text style={styles.planNote}>{PLAN_NOTE}</Text>
       </ScrollView>
     </View>
   );
@@ -156,6 +173,11 @@ const styles = StyleSheet.create({
   name: { flex: 1, color: colors.onSurface, fontSize: 16, fontWeight: "800" },
   time: { color: colors.brandSecondary, fontSize: 13, fontWeight: "800" },
   targets: { color: colors.muted, fontSize: 13, marginTop: 4 },
+  section: { color: colors.brandSecondary, fontSize: 11, fontWeight: "900", letterSpacing: 1.6, marginTop: spacing.lg, marginBottom: spacing.sm },
+  planRow: { flexDirection: "row", gap: spacing.sm, marginBottom: 6 },
+  planWeeks: { width: 78, color: colors.brandSecondary, fontSize: 12, fontWeight: "800" },
+  planGoal: { flex: 1, color: colors.onSurface, fontSize: 13, lineHeight: 19 },
+  planNote: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: spacing.sm },
   label: { color: colors.brandSecondary, fontSize: 10, fontWeight: "900", letterSpacing: 1.4, marginTop: 8 },
   detail: { color: colors.onSurface, fontSize: 13, lineHeight: 19 },
   start: { flexDirection: "row", gap: 6, alignSelf: "flex-start", alignItems: "center", backgroundColor: colors.brandPrimary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, marginTop: spacing.md },
