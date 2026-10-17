@@ -79,5 +79,5 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border,
   },
   title: { color: colors.onSurface, fontSize: 22, fontWeight: "900", letterSpacing: 0.3 },
-  loading: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  loading: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
 });

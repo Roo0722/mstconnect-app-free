@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, LayoutAnimation } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
-import { cue } from "../../src/sound";
-import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
+import { cue, preloadSounds } from "../../src/sound";
+import { FullScreenTimer } from "../../src/FullScreenTimer";
 import { STRETCHES, SAFETY, RULES, PLAN_NOTE, PROGRESSION, PROGRESSION_NOTE } from "../../src/stretchData";
-import { segLook, isRestLabel, isSwitch } from "../../src/sideColors";
-import { advance, isPrep, locate, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
+import { advance, displayKey, stepEvents, stepMs, type Pos } from "../../src/warmupEngine";
+import { moment } from "../../src/routineView";
 
-const EVENTS = STRETCHES.map(stepEvents);
+const EVENTS = STRETCHES.map((s) => stepEvents(s));
 const fmt = (ms: number) => {
   const s = Math.ceil(ms / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -26,8 +26,8 @@ export default function StretchesScreen() {
   const [pos, setPos] = useState<Pos>({ idx: 0, elapsed: 0 });
   const [open, setOpen] = useState<number | null>(null);
   const posRef = useRef(pos);
-  posRef.current = pos;
   useKeepAwake("mstc-stretches");
+  useEffect(() => preloadSounds(), []);
 
   useEffect(() => {
     if (!running) return;
@@ -39,15 +39,20 @@ export default function StretchesScreen() {
       // one stretch at a time: stop when it finishes
       const r = advance([STRETCHES[posRef.current.idx]], { idx: 0, elapsed: posRef.current.elapsed }, delta, () => EVENTS[posRef.current.idx]);
       const p = { idx: posRef.current.idx, elapsed: r.finished ? 0 : r.pos.elapsed };
+      const prev = posRef.current;
       posRef.current = p;
-      setPos(p);
+      // the engine ticks 10x a second; only redraw when something on screen changes
+      if (r.finished || displayKey(STRETCHES[p.idx], p.idx, p.elapsed) !== displayKey(STRETCHES[prev.idx], prev.idx, prev.elapsed)) setPos(p);
       cue(r.cue);
       if (r.finished) {
         setRunning(false);
         setFull(false);
       }
     }, 100);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      setPos(posRef.current); // when paused, show exactly where we stopped
+    };
   }, [running]);
 
   const begin = (idx: number) => {
@@ -60,20 +65,15 @@ export default function StretchesScreen() {
   };
 
   const st = STRETCHES[pos.idx];
-  const w = locate(st, pos.elapsed);
   const total = stepMs(st);
-  const isReady = isPrep(st.segments[w.seg]);
-  const curSeg = st.segments[w.seg];
-  const isRest = isRestLabel(curSeg.label);
-  const look = segLook(curSeg.label);
-  const nextSeg = st.segments[w.seg + 1];
-  const segEnd = st.segments.slice(0, w.seg + 1).reduce((a, g) => a + Math.round(g.seconds * 1000), 0);
-  const badge = isReady ? "GET INTO POSITION" : isSwitch(curSeg.label) ? "SWITCH SIDES" : isRest ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : "HOLD GENTLY";
-  const lines = isReady ? [st.position, st.easier] : isSwitch(curSeg.label) ? [nextSeg ? `Next: ${nextSeg.label}` : "Switch sides", "Reset your position and breathe."] : isRest ? ["Shake out, breathe slowly.", "Next set starts soon."] : st.cues;
-  const pills: Pill[] = st.segments
-    .map((g, i) => ({ g, i }))
-    .filter((x) => !isSwitch(x.g.label))
-    .map(({ g, i }) => ({ label: g.label ?? "", state: i < w.seg ? "done" : i === w.seg ? "current" : "todo" }));
+  const m = moment(st, pos.elapsed, { readyBadge: "GET INTO POSITION", holdWord: "HOLD GENTLY" });
+  const lines = m.getReady
+    ? [st.position, st.easier]
+    : m.switching
+      ? [m.nextSeg ? `Next: ${m.nextSeg.label}` : "Switch sides", "Reset your position and breathe."]
+      : m.pause
+        ? ["Shake out, breathe slowly.", "Next set starts soon."]
+        : st.cues;
 
   if (full) {
     return (
@@ -82,15 +82,18 @@ export default function StretchesScreen() {
         <FullScreenTimer
           eyebrow={`FLEXIBILITY ${pos.idx + 1} / ${STRETCHES.length}`}
           title={st.name}
-          big={fmt(isSwitch(curSeg.label) ? segEnd - pos.elapsed : total - pos.elapsed)}
-          badge={badge}
-          pills={pills}
+          big={fmt(m.leftMs)}
+          cueWord={m.cueWord}
+          badge={m.badge}
+          then={m.then}
+          pills={m.pills}
           lines={lines}
-          purpose={isReady || isRest ? undefined : SAFETY}
+          purpose={m.getReady || m.pause ? undefined : SAFETY}
           progress={pos.elapsed / total}
           nextUp={null}
-          accent={look?.accent}
-          tint={look?.tint}
+          accent={m.look?.accent}
+          tint={m.look?.tint}
+          urgent={m.urgent}
           running={running}
           onToggle={() => setRunning((v) => !v)}
           onClose={() => {
@@ -107,7 +110,7 @@ export default function StretchesScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <BackgroundGlow />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -123,7 +126,12 @@ export default function StretchesScreen() {
         {STRETCHES.map((s, i) => {
           const isOpen = open === i;
           return (
-            <Pressable key={s.name} style={styles.card} onPress={() => setOpen(isOpen ? null : i)}>
+            <Pressable key={s.name} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setOpen(isOpen ? null : i);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: isOpen }}>
               <View style={styles.cardTop}>
                 <Text style={styles.name}>{s.name}</Text>
                 <Text style={styles.time}>{s.prescription}</Text>
@@ -171,6 +179,7 @@ export default function StretchesScreen() {
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.88 },
   root: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   backBtn: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.surfaceSecondary, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },

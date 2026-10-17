@@ -49,6 +49,16 @@ async function ensureMode() {
   } catch {}
 }
 
+// Create the audio players up front, so the first beep of a session is not late.
+export function preloadSounds() {
+  ensureMode();
+  (Object.keys(SOURCES) as (keyof typeof SOURCES)[]).forEach((k) => {
+    try {
+      players[k] ??= createAudioPlayer(SOURCES[k]);
+    } catch {}
+  });
+}
+
 export function cue(name: Cue) {
   if (name === "none") return;
   if (name === "tick") {

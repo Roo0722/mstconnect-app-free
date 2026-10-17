@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import Ionicons from "@react-native-vector-icons/ionicons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { api, type MstcEvent } from "../../src/api";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 
 function useCountdown(targetIso?: string | null, durationMin: number = 120) {
   const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  // tick only while this tab is on screen (the tab stays mounted when you switch away)
+  useFocusEffect(
+    useCallback(() => {
+      setNow(Date.now());
+      const id = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(id);
+    }, []),
+  );
   return useMemo(() => {
     if (!targetIso) return { state: "tbd" as const };
     const target = new Date(targetIso).getTime();

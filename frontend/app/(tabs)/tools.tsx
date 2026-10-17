@@ -1,45 +1,87 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
+import { WARMUP } from "../../src/warmupData";
+import { STRETCHES } from "../../src/stretchData";
+import { stepMs, withPrep } from "../../src/warmupEngine";
 
-type Tool = { key: string; title: string; subtitle: string; icon: any; route: any; accent: "red" | "yellow" };
+type Tool = { key: string; title: string; subtitle: string; meta?: string; icon: any; route: any; accent: "red" | "yellow" };
+type Section = { title: string; hint: string; tools: Tool[] };
 
-const TOOLS: Tool[] = [
-  { key: "timer", title: "HIIT Interval Timer", subtitle: "Work / rest rounds", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
-  { key: "warmup", title: "Warm-Up Guide", subtitle: "Guided routine, about 15 min", icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
-  { key: "stretches", title: "Flexibility & Kicking", subtitle: "Splits, active leg control & hinge", icon: "body-outline", route: "/tools/stretches", accent: "red" },
-  { key: "score", title: "Score Counter", subtitle: "Team A vs Team B", icon: "trophy-outline", route: "/tools/score", accent: "red" },
-  { key: "rules", title: "Rules & Court", subtitle: "Quick reference", icon: "book-outline", route: "/tools/rules", accent: "yellow" },
-];
+// Training tools first (what you reach for most), then the match scorer, then reference pages.
+function useSections(): Section[] {
+  return useMemo(() => {
+    const warmMin = Math.round(withPrep(WARMUP).reduce((a, s) => a + stepMs(s), 0) / 60000);
+    return [
+      {
+        title: "TRAINING",
+        hint: "For practice and conditioning",
+        tools: [
+          { key: "timer", title: "HIIT Interval Timer", subtitle: "Work and rest rounds, with your own presets", meta: "Timer", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
+          { key: "warmup", title: "Warm-Up Guide", subtitle: "Step-by-step routine with side colours and cues", meta: `~${warmMin} min`, icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
+          { key: "stretches", title: "Flexibility & Kicking", subtitle: "Splits, active leg control and hip hinge", meta: `${STRETCHES.length} exercises`, icon: "body-outline", route: "/tools/stretches", accent: "red" },
+        ],
+      },
+      {
+        title: "MATCH",
+        hint: "For game day",
+        tools: [{ key: "score", title: "Score Counter", subtitle: "Team A vs Team B, landscape view", icon: "trophy-outline", route: "/tools/score", accent: "red" }],
+      },
+      {
+        title: "REFERENCE",
+        hint: "Look things up",
+        tools: [{ key: "rules", title: "Rules & Court", subtitle: "Quick reference for rules and court layout", icon: "book-outline", route: "/tools/rules", accent: "yellow" }],
+      },
+    ];
+  }, []);
+}
 
 export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const sections = useSections();
   return (
     <View style={styles.root}>
       <BackgroundGlow />
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.md, paddingBottom: spacing.xxl, paddingHorizontal: spacing.lg }}>
-        <Text style={styles.title}>Tools</Text>
+        <Text style={styles.title} accessibilityRole="header">Tools</Text>
         <Text style={styles.subtitle}>Everything you need, courtside.</Text>
-        <View style={styles.grid}>
-          {TOOLS.map((t) => (
-            <Pressable
-              key={t.key}
-              testID={`tool-${t.key}`}
-              style={styles.card}
-              onPress={() => router.push(t.route)}
-            >
-              <View style={[styles.iconWrap, t.accent === "red" ? styles.iconRed : styles.iconYellow]}>
-                <Ionicons name={t.icon} size={22} color={t.accent === "red" ? colors.brandPrimary : colors.brandSecondary} />
-              </View>
-              <Text style={styles.cardTitle}>{t.title}</Text>
-              <Text style={styles.cardSub}>{t.subtitle}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {sections.map((sec) => (
+          <View key={sec.title} style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">{sec.title}</Text>
+              <Text style={styles.sectionHint}>{sec.hint}</Text>
+            </View>
+            {sec.tools.map((t) => (
+              <Pressable
+                key={t.key}
+                testID={`tool-${t.key}`}
+                accessibilityRole="button"
+                accessibilityLabel={`${t.title}. ${t.subtitle}`}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                onPress={() => router.push(t.route)}
+              >
+                <View style={[styles.iconWrap, t.accent === "red" ? styles.iconRed : styles.iconYellow]}>
+                  <Ionicons name={t.icon} size={24} color={t.accent === "red" ? colors.brandPrimary : colors.brandSecondary} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={styles.cardTitle}>{t.title}</Text>
+                  <Text style={styles.cardSub}>{t.subtitle}</Text>
+                </View>
+                {t.meta ? (
+                  <View style={styles.chip}>
+                    <Text style={styles.chipText}>{t.meta}</Text>
+                  </View>
+                ) : null}
+                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+              </Pressable>
+            ))}
+          </View>
+        ))}
       </ScrollView>
     </View>
   );
@@ -48,23 +90,30 @@ export default function ToolsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   title: { color: colors.onSurface, fontSize: 28, fontWeight: "900", letterSpacing: 0.3 },
-  subtitle: { color: colors.muted, fontSize: 13, marginTop: 2, marginBottom: spacing.lg },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  card: {
-    flexBasis: "48%", flexGrow: 1,
+  subtitle: { color: colors.muted, fontSize: 13, marginTop: 2, marginBottom: spacing.sm },
+  section: { marginTop: spacing.lg, gap: spacing.sm },
+  sectionHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 2 },
+  sectionTitle: { color: colors.brandSecondary, fontSize: 12, fontWeight: "900", letterSpacing: 1.8 },
+  sectionHint: { color: colors.muted, fontSize: 12 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    minHeight: 76,
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border,
-    gap: 10,
-    minHeight: 130,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  iconWrap: {
-    width: 42, height: 42, borderRadius: radius.md,
-    alignItems: "center", justifyContent: "center",
-  },
+  rowPressed: { opacity: 0.85, transform: [{ scale: 0.985 }] },
+  iconWrap: { width: 46, height: 46, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
   iconRed: { backgroundColor: colors.brandTertiary },
   iconYellow: { backgroundColor: "rgba(252, 209, 22, 0.15)" },
+  rowText: { flex: 1, gap: 2 },
   cardTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800" },
-  cardSub: { color: colors.muted, fontSize: 12 },
+  cardSub: { color: colors.muted, fontSize: 12, lineHeight: 17 },
+  chip: { backgroundColor: colors.surfaceTertiary, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  chipText: { color: colors.onSurface, fontSize: 11, fontWeight: "800" },
 });

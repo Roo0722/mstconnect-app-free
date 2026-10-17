@@ -6,7 +6,7 @@
 // Segments with a `label` (e.g. "Right side") show as pills and play a gentle "switch" tone.
 // Keep rep lengths slow (2 s or more) so the rhythm stays gentle and easy to follow.
 
-export type Segment = { label?: string; seconds: number; reps?: number; beat?: number };
+export type Segment = { label?: string; seconds: number; reps?: number; beat?: number; cycle?: string[] };
 export type WarmupPhase =
   | "Raise body temperature"
   | "Upper body & trunk mobility"
@@ -50,11 +50,11 @@ export const WARMUP: WarmupStep[] = [
     details: ["Start slowly, then increase the pace until you feel warmer.", "Swing your arms easily.", "Stay relaxed; tick = one step."],
     segments: [{ seconds: 75, beat: 2 }] },
   { name: "Cervical Rotation Stretch", phase: R,
-    details: ["Turn your head gently from side to side.", "Pause at center between turns.", "Avoid forcing the neck. Right + left = one rep."],
-    segments: [{ seconds: 20, reps: 4 }] },
+    details: ["Turn your head gently, right then left, taking turns.", "Return to center and pause between turns.", "Avoid forcing the neck."],
+    segments: [{ seconds: 24, reps: 8, cycle: ["Right", "Left"] }] },
   { name: "Neck Flexion & Extension", phase: R,
-    details: ["Nod gently up and down within a comfortable range.", "Never force the movement."],
-    segments: [{ seconds: 20, reps: 4 }] },
+    details: ["Lower your chin toward your chest, then look up gently, taking turns.", "Stay within a comfortable range.", "Never force the movement."],
+    segments: [{ seconds: 24, reps: 8, cycle: ["Down", "Up"] }] },
 
   // Phase 2: upper body and trunk mobility
   { name: "Levator Scapulae Stretch", phase: U,
@@ -69,7 +69,7 @@ export const WARMUP: WarmupStep[] = [
   { name: "Cross-Body Shoulder Stretch", phase: U,
     details: ["Bring one arm across your chest.", "Keep the shoulder relaxed; don't pull aggressively.", "Hold, then switch sides."],
     segments: side(10) },
-  { name: "Triceps Stretch (optional)", phase: U, purpose: "Lower priority for sepak takraw. Keep it brief or skip it.",
+  { name: "Triceps Stretch", phase: U,
     details: ["Raise one arm and bend the elbow behind your head.", "Gently press the elbow with the other hand. Hold, then switch sides."],
     segments: side(10) },
   { name: "Chest and Biceps Opener", phase: U,
@@ -107,10 +107,10 @@ export const WARMUP: WarmupStep[] = [
 
   // Phase 4: sepak takraw preparation
   { name: "Leg Swings", phase: S,
-    details: ["Hold a support if needed.", "Begin with small swings and increase gradually.", "Forward-back, then side-to-side, on each leg."],
+    details: ["Hold a support if needed.", "Begin with small swings and increase gradually.", "Each leg: swing forward, then backward, then sideways (across your body)."],
     segments: [
-      { label: "Right: front-back", seconds: 16, reps: 8 }, { label: "Right: side-side", seconds: 16, reps: 8 }, swap,
-      { label: "Left: front-back", seconds: 16, reps: 8 }, { label: "Left: side-side", seconds: 16, reps: 8 }] },
+      { label: "Right · forward", seconds: 14, reps: 6 }, { label: "Right · back", seconds: 14, reps: 6 }, { label: "Right · sideways", seconds: 14, reps: 6 }, swap,
+      { label: "Left · forward", seconds: 14, reps: 6 }, { label: "Left · back", seconds: 14, reps: 6 }, { label: "Left · sideways", seconds: 14, reps: 6 }] },
   { name: "Controlled Kicks", phase: S,
     details: ["Low (about knee height), then middle (about waist), then high (a comfortable height).", "2 kicks at each height, right leg first, then left.", "Stay controlled; no maximum-height kicks yet."],
     segments: [

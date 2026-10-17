@@ -2,7 +2,9 @@
 // Times are in integer milliseconds. No React in here so it can be tested in plain node.
 import type { Cue } from "./timerLogic";
 
-export type Seg = { label?: string; seconds: number; reps?: number; beat?: number };
+// cycle: the reps take turns through these names (e.g. ["Right", "Left"] or ["Down", "Up"]) so the
+// screen can show which one you are on. Needs `reps`.
+export type Seg = { label?: string; seconds: number; reps?: number; beat?: number; cycle?: string[] };
 export type Routine = { segments: Seg[] }[];
 
 // A short "Get ready" gap at the start of every exercise, so you can change position before it begins.
@@ -14,7 +16,7 @@ export const isPrep = (g?: Seg) => g?.label === PREP_LABEL;
 
 export const stepMs = (s: { segments: Seg[] }) => Math.round(s.segments.reduce((a, g) => a + g.seconds, 0) * 1000);
 
-export type Where = { seg: number; segElapsed: number; rep: number | null; reps: number | null; hold: boolean };
+export type Where = { seg: number; segElapsed: number; rep: number | null; reps: number | null; hold: boolean; cyc: string | null };
 
 export function locate(step: { segments: Seg[] }, elapsedMs: number): Where {
   let start = 0;
@@ -25,11 +27,12 @@ export function locate(step: { segments: Seg[] }, elapsedMs: number): Where {
       const se = Math.max(0, Math.min(len, elapsedMs - start));
       const reps = g.reps ?? null;
       const rep = reps ? Math.min(reps, Math.floor(se / (len / reps)) + 1) : null;
-      return { seg: i, segElapsed: se, rep, reps, hold: !g.reps && !g.beat };
+      const cyc = rep && g.cycle?.length ? g.cycle[(rep - 1) % g.cycle.length] : null;
+      return { seg: i, segElapsed: se, rep, reps, hold: !g.reps && !g.beat, cyc };
     }
     start += len;
   }
-  return { seg: 0, segElapsed: 0, rep: null, reps: null, hold: true };
+  return { seg: 0, segElapsed: 0, rep: null, reps: null, hold: true, cyc: null };
 }
 
 // All cue moments inside one step: [timeMs, cue]
@@ -89,4 +92,11 @@ export function advance(
     cues.push(isPrep(first) ? "switch" : first.label === "Rest" ? "rest" : "start");
     if (remainingDelta === 0) return { pos: { idx, elapsed: 0 }, cue: strongest(cues), finished: false };
   }
+}
+
+// The screens only need to re-render when something they show changes: a new step or segment,
+// a new rep, or a new whole second. This is what keeps a 10-ticks-a-second engine light.
+export function displayKey(step: { segments: Seg[] }, idx: number, elapsedMs: number): string {
+  const w = locate(step, elapsedMs);
+  return `${idx}|${w.seg}|${w.rep ?? ""}|${Math.floor(elapsedMs / 1000)}`;
 }

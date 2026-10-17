@@ -7,7 +7,8 @@ import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
-import { cue, useSoundEnabled } from "../../src/sound";
+import { cue, preloadSounds, useSoundEnabled } from "../../src/sound";
+import { segLook } from "../../src/sideColors";
 import { tickTimer, type Phase } from "../../src/timerLogic";
 import { FullScreenTimer } from "../../src/FullScreenTimer";
 
@@ -89,6 +90,7 @@ export default function TimerScreen() {
   const [soundOn, setSoundOn] = useSoundEnabled();
   const [full, setFull] = useState(false);
   useKeepAwake("mstc-timer"); // screen stays on while the timer screen is open
+  useEffect(() => preloadSounds(), []);
 
   // latest values for the 1-second interval (avoids stale closures)
   const latest = useRef({ phase, remaining, round, preset, lead });
@@ -141,6 +143,8 @@ export default function TimerScreen() {
 
   const getReady = lead !== null && lead > 0;
   const isWork = phase === "work";
+  // same colours as the routines: slate = get ready, amber = rest, work keeps the normal look
+  const look = getReady ? segLook("Get ready") : isWork ? null : segLook("Rest");
 
   if (full) {
     const perRound = preset.work + preset.rest;
@@ -155,7 +159,9 @@ export default function TimerScreen() {
           title={getReady ? "GET READY" : isWork ? "WORK" : "REST"}
           big={fmt(getReady ? lead! : remaining)}
           progress={Math.min(1, done / total)}
-          accent={isWork || getReady ? colors.brandPrimary : colors.brandSecondary}
+          accent={look?.accent ?? colors.brandPrimary}
+          tint={look?.tint}
+          urgent={running && (getReady ? lead! <= 3 : remaining <= 3 && (isWork ? preset.work : preset.rest) > 5)}
           nextUp={getReady ? "ROUND 1" : remaining <= 5 ? nextText : null}
           running={running}
           onToggle={toggle}
@@ -170,11 +176,11 @@ export default function TimerScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <BackgroundGlow />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable testID="back-btn" onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <Text style={[styles.title, { flex: 1 }]}>HIIT Interval Timer</Text>
-        <Pressable testID="sound-toggle" onPress={() => setSoundOn(!soundOn)} style={styles.backBtn}>
+        <Pressable testID="sound-toggle" onPress={() => setSoundOn(!soundOn)} style={styles.backBtn} accessibilityRole="button" accessibilityLabel={soundOn ? "Mute sound" : "Turn sound on"}>
           <Ionicons name={soundOn ? "volume-high" : "volume-mute"} size={20} color={soundOn ? colors.brandSecondary : colors.muted} />
         </Pressable>
       </View>

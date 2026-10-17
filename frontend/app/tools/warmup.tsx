@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, LayoutAnimation } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
-import { cue } from "../../src/sound";
-import { FullScreenTimer, type Pill } from "../../src/FullScreenTimer";
-import { segLook, isRestLabel, isSwitch } from "../../src/sideColors";
+import { cue, preloadSounds } from "../../src/sound";
+import { FullScreenTimer } from "../../src/FullScreenTimer";
 import { WARMUP, WARMUP_SAFETY } from "../../src/warmupData";
-import { advance, isPrep, locate, stepEvents, stepMs, withPrep, type Pos } from "../../src/warmupEngine";
+import { advance, displayKey, isPrep, stepEvents, stepMs, withPrep, type Pos } from "../../src/warmupEngine";
+import { moment } from "../../src/routineView";
 
 const NEXT_WARNING_MS = 5000;
 // every exercise gets a short "Get ready" gap in front of it
@@ -33,8 +33,8 @@ export default function WarmupScreen() {
   const [open, setOpen] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
   const posRef = useRef(pos);
-  posRef.current = pos;
   useKeepAwake("mstc-warmup");
+  useEffect(() => preloadSounds(), []);
 
   useEffect(() => {
     if (!running) return;
@@ -44,8 +44,10 @@ export default function WarmupScreen() {
       const delta = Math.min(500, now - last); // never jump after the app was frozen
       last = now;
       const r = advance(STEPS, posRef.current, delta, (i) => EVENTS[i]);
+      const prev = posRef.current;
       posRef.current = r.pos;
-      setPos(r.pos);
+      // the engine ticks 10x a second; only redraw when something on screen changes
+      if (r.finished || displayKey(STEPS[r.pos.idx], r.pos.idx, r.pos.elapsed) !== displayKey(STEPS[prev.idx], prev.idx, prev.elapsed)) setPos(r.pos);
       cue(r.cue);
       if (r.finished) {
         setFinished(true);
@@ -53,7 +55,10 @@ export default function WarmupScreen() {
         setFull(false);
       }
     }, 100);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      setPos(posRef.current); // when paused, show exactly where we stopped
+    };
   }, [running]);
 
   const begin = (idx: number) => {
@@ -73,24 +78,9 @@ export default function WarmupScreen() {
   };
 
   const step = STEPS[pos.idx];
-  const w = locate(step, pos.elapsed);
-  const total = stepMs(step);
-  const cur = step.segments[w.seg];
-  const getReady = isPrep(cur);
-  const pause = isRestLabel(cur.label); // "Switch sides" pause or the final rest
-  const look = segLook(cur.label);
-  const prepMs = stepMs({ segments: [step.segments[0]] });
-  // during "Get ready" / a pause show its own countdown; otherwise the time left in the exercise
-  const segEnd = step.segments.slice(0, w.seg + 1).reduce((a, g) => a + Math.round(g.seconds * 1000), 0);
-  const left = getReady ? prepMs - pos.elapsed : pause ? segEnd - pos.elapsed : total - pos.elapsed;
-  const nextSeg = step.segments[w.seg + 1];
+  const followedByPrep = pos.idx < STEPS.length - 1 && isPrep(STEPS[pos.idx + 1].segments[0]);
+  const m = moment(step, pos.elapsed, { followedByPrep });
   const nextStep = STEPS[pos.idx + 1];
-  const shown = step.segments.map((g, i) => ({ g, i })).filter((x) => !isPrep(x.g) && !isSwitch(x.g.label));
-  const pills: Pill[] = shown.map(({ g, i }) => ({
-    label: g.label ?? "",
-    state: i < w.seg ? "done" : i === w.seg ? "current" : "todo",
-  }));
-  const hasLabels = shown.some((x) => x.g.label);
 
   const groups = useMemo(() => {
     const out: { phase: string; items: number[] }[] = [];
@@ -109,15 +99,18 @@ export default function WarmupScreen() {
         <FullScreenTimer
           eyebrow={`${step.phase.toUpperCase()} · STEP ${pos.idx + 1} / ${WARMUP.length}`}
           title={step.name}
-          big={fmt(left)}
-          badge={getReady ? "GET READY" : isSwitch(cur.label) ? "SWITCH SIDES" : pause ? "REST" : w.rep ? `REP ${w.rep} / ${w.reps}` : step.segments[w.seg].beat ? "FOLLOW THE BEAT" : w.hold ? "HOLD" : undefined}
-          pills={hasLabels ? pills : undefined}
-          lines={isSwitch(cur.label) ? [nextSeg ? `Next: ${nextSeg.label}` : "Switch sides", "Reset your position and breathe."] : step.details}
-          purpose={step.purpose}
+          big={fmt(m.leftMs)}
+          cueWord={m.cueWord}
+          badge={m.badge}
+          then={m.then}
+          pills={m.pills}
+          lines={m.switching ? [m.nextSeg ? `Next: ${m.nextSeg.label}` : "Switch sides", "Reset your position and breathe."] : step.details}
+          purpose={m.pause || m.getReady ? undefined : step.purpose}
           progress={(STARTS[pos.idx] + pos.elapsed) / TOTAL_MS}
-          nextUp={!getReady && !pause && left <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
-          accent={look?.accent}
-          tint={look?.tint}
+          nextUp={!m.getReady && !m.pause && m.leftMs <= NEXT_WARNING_MS && nextStep ? nextStep.name : null}
+          accent={m.look?.accent}
+          tint={m.look?.tint}
+          urgent={m.urgent}
           running={running}
           showTickToggle
           onToggle={() => setRunning((v) => !v)}
@@ -137,7 +130,7 @@ export default function WarmupScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <BackgroundGlow />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -163,7 +156,12 @@ export default function WarmupScreen() {
               const s = WARMUP[i];
               const isOpen = open === i;
               return (
-                <Pressable key={s.name} style={styles.row} onPress={() => setOpen(isOpen ? null : i)}>
+                <Pressable key={s.name} style={({ pressed }) => [styles.row, pressed && styles.pressed]} onPress={() => {
+                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                    setOpen(isOpen ? null : i);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: isOpen }}>
                   <View style={styles.rowTop}>
                     <View style={styles.idx}><Text style={styles.idxText}>{i + 1}</Text></View>
                     <Text style={styles.name}>{s.name}</Text>
@@ -197,6 +195,7 @@ export default function WarmupScreen() {
 }
 
 const styles = StyleSheet.create({
+  pressed: { opacity: 0.88 },
   root: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   backBtn: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.surfaceSecondary, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
