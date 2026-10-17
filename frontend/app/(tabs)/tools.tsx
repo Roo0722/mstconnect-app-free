@@ -12,7 +12,7 @@ import { stepMs, withPrep } from "../../src/warmupEngine";
 type Tool = { key: string; title: string; subtitle: string; meta?: string; icon: any; route: any; accent: "red" | "yellow" };
 type Section = { title: string; hint: string; tools: Tool[] };
 
-// Training tools first (what you reach for most), then the match scorer, then reference pages.
+// Training tools in the order of a session (warm up, train, stretch), then the match scorer, then reference pages.
 function useSections(): Section[] {
   return useMemo(() => {
     const warmMin = Math.round(withPrep(WARMUP).reduce((a, s) => a + stepMs(s), 0) / 60000);
@@ -21,8 +21,8 @@ function useSections(): Section[] {
         title: "TRAINING",
         hint: "For practice and conditioning",
         tools: [
-          { key: "timer", title: "HIIT Interval Timer", subtitle: "Work and rest rounds, with your own presets", meta: "Timer", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
           { key: "warmup", title: "Warm-Up Guide", subtitle: "Step-by-step routine with side colours and cues", meta: `~${warmMin} min`, icon: "flame-outline", route: "/tools/warmup", accent: "yellow" },
+          { key: "timer", title: "HIIT Interval Timer", subtitle: "Work and rest rounds, with your own presets", meta: "Timer", icon: "stopwatch-outline", route: "/tools/timer", accent: "red" },
           { key: "stretches", title: "Flexibility & Kicking", subtitle: "Splits, active leg control and hip hinge", meta: `${STRETCHES.length} exercises`, icon: "body-outline", route: "/tools/stretches", accent: "red" },
         ],
       },
