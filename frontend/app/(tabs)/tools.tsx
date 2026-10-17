@@ -8,15 +8,21 @@ import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { WARMUP } from "../../src/warmupData";
 import { STRETCHES } from "../../src/stretchData";
 import { stepMs, withPrep } from "../../src/warmupEngine";
+import { useGame } from "../../src/game/store";
 
 type Tool = { key: string; title: string; subtitle: string; meta?: string; icon: any; route: any; accent: "red" | "yellow" };
 type Section = { title: string; hint: string; tools: Tool[] };
 
 // Training tools in the order of a session (warm up, train, stretch), then the match scorer, then reference pages.
-function useSections(): Section[] {
+function useSections(rankMeta: string): Section[] {
   return useMemo(() => {
     const warmMin = Math.round(withPrep(WARMUP).reduce((a, s) => a + stepMs(s), 0) / 60000);
     return [
+      {
+        title: "MY PROGRESS",
+        hint: "Rank and training log",
+        tools: [{ key: "training", title: "Training Log & Rank", subtitle: "Your minutes, weekly quests and rank ladder", meta: rankMeta, icon: "medal-outline", route: "/training", accent: "yellow" }],
+      },
       {
         title: "TRAINING",
         hint: "For practice and conditioning",
@@ -37,13 +43,14 @@ function useSections(): Section[] {
         tools: [{ key: "rules", title: "Rules & Court", subtitle: "Quick reference for rules and court layout", icon: "book-outline", route: "/tools/rules", accent: "yellow" }],
       },
     ];
-  }, []);
+  }, [rankMeta]);
 }
 
 export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const sections = useSections();
+  const { game } = useGame();
+  const sections = useSections(`${game.rankName}${game.division ? ` ${game.division}` : ""}`);
   return (
     <View style={styles.root}>
       <BackgroundGlow />

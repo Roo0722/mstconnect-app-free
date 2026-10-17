@@ -1,229 +1,215 @@
-# MSTC Platform — Malitbog Sepak Takraw Community
+<div align="center">
 
-Official community website for the **Malitbog Sepak Takraw Community (MSTC)**,
-Malitbog, Southern Leyte, Philippines.
+<h1>MSTCONNECT</h1>
 
-**Play. Reconnect. Pass It On.**
+<h3>The companion app of the Malitbog Sepak Takraw Community (MSTC)</h3>
 
-A small, fast, secure announcement platform designed to run at **$0 cost** on
-Cloudflare's free tier:
+<h3><em>Play. Reconnect. Pass It On.</em></h3>
 
-| Piece | Service | Cost |
-|---|---|---|
-| Hosting + public pages | Cloudflare Workers (Static Assets) | Free tier |
-| Backend / API | Cloudflare Workers | Free tier |
-| Database | Cloudflare D1 (SQLite) | Free tier |
-| Photo storage | Inside Cloudflare D1 (no R2, no card needed) | Free tier |
-| Bot protection (optional) | Cloudflare Turnstile | Free |
-| Backups (optional, manual) | Google Drive | Free |
+<a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">
+  <img src="https://img.shields.io/badge/Download%20the%20latest%20APK-e0362c?style=for-the-badge&logo=android&logoColor=white&labelColor=0a0a0c" alt="Download the latest APK" height="56">
+</a>
 
-No public registration, no comments, no chat, no real-time features — by design.
-The public experience: **VISIT → READ → LEARN → SEE EVENTS → CONNECT**.
-The admin experience: **SIGN IN → CREATE → PUBLISH → MANAGE**.
+<br>
+
+[![Latest release](https://img.shields.io/github/v/release/Roo0722/mstconnect-app-free?style=flat-square&color=fcd116&labelColor=0a0a0c&label=latest)](https://github.com/Roo0722/mstconnect-app-free/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Roo0722/mstconnect-app-free/total?style=flat-square&color=e0362c&labelColor=0a0a0c)](https://github.com/Roo0722/mstconnect-app-free/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-fcd116?style=flat-square&labelColor=0a0a0c)](LICENSE)
+![Android](https://img.shields.io/badge/Android-free%20%26%20open-e0362c?style=flat-square&logo=android&logoColor=white&labelColor=0a0a0c)
+
+<sub><b><a href="https://github.com/Roo0722/mstconnect-app-free/releases/latest/download/MSTConnect.apk">Download MSTConnect.apk</a></b> · Android · free · no account needed · [all releases](https://github.com/Roo0722/mstconnect-app-free/releases)</sub>
+
+<br>
+
+<img src="docs/screenshots/home.jpg" width="100%" alt="MSTConnect App Showcase">
+
+</div>
+
+MSTConnect puts the community's announcements, events and training tools in your pocket. It is **free to use, free to build and free to host**: there is no database to pay for and no backend to run.
+
+## Contents
+
+[Features](#features) · [Install](#install-on-your-phone) · [How it works](#how-it-works) · [Push notifications](#push-notifications-optional-free) · [Build it yourself](#build-it-yourself-free) · [Project structure](#project-structure) · [Roadmap](#roadmap) · [License](#license)
 
 ---
 
-## 1. Project structure
+## Features
 
-```
-MSTC-Platform/
-├── wrangler.toml            ← Cloudflare config (D1, site URL, chat link, Turnstile key)
-├── schema.sql               ← D1 database schema (tables + indexes) for a brand-new database
-├── schema-upgrade-*.sql     ← One-time upgrades for databases created before a feature existed (section 4)
-├── package.json             ← Only dev dependency: wrangler
-├── src/                     ← The Cloudflare Worker (backend + public pages)
-│   ├── index.js             ← Entry: routes /api, /media, pages, static assets
-│   ├── api.js               ← Admin JSON API (auth, announcements, events, media, users, audit)
-│   ├── auth.js              ← Sessions, PBKDF2 hashing, lockout, Turnstile, roles, audit
-│   ├── pages.js             ← Server-rendered public pages (SEO/OG) + sitemap + robots
-│   └── util.js              ← Escaping, slugify, validation, hashing, Markdown, Philippine-time event helpers
-├── public/                  ← Static assets (served as-is)
-│   ├── assets/              ← Public site CSS/JS/icons (and watermark.png for photo uploads)
-│   └── admin/               ← Admin dashboard (static HTML + admin.js)
-├── scripts/
-│   └── create-admin.js      ← Creates the first SUPER_ADMIN account (SQL)
-└── README.md
-```
+### Community
 
-## 2. Requirements
-
-- [Node.js](https://nodejs.org) 18+ (LTS recommended; **22+** only if you want to run `npm test`)
-- A free [Cloudflare](https://dash.cloudflare.com/sign-up) account (only needed for deployment,
-  not for local development)
-- VS Code (or any editor) — open the `MSTC-Platform` folder via **File → Open Folder…**
-
-## 3. Local development
-
-```bash
-cd MSTC-Platform
-npm install                              # or: yarn
-npm run db:local                         # create local tables from schema.sql
-node scripts/create-admin.js admin@mstc.local 'ChangeMe12345' 'MSTC Admin' > admin.sql
-npx wrangler d1 execute mstc-db --local --file=admin.sql
-rm admin.sql                             # contains a password hash — delete it
-npm run dev                              # http://localhost:8787
-```
-
-- Public site: http://localhost:8787
-- Admin login: http://localhost:8787/admin/login (use the account you just created)
-
-## 4. Deployment to Cloudflare (free)
-
-```bash
-npx wrangler login                       # opens browser, free account
-
-# 1. Database
-npx wrangler d1 create mstc-db
-#   → copy the printed database_id into wrangler.toml (replace the placeholder)
-npm run db:remote                        # apply schema to the real database
-
-# 2. Photos are stored inside D1 - nothing to create, no R2, no payment method.
-#    A brand-new database needs nothing more: schema.sql already includes every feature.
-#    If you created the database with an OLDER schema.sql, run these once, in this order, and
-#    ignore a 'duplicate column name' message (it means that step was already applied):
-npx wrangler d1 execute mstc-db --remote --file=schema-upgrade-photos-in-d1.sql
-npx wrangler d1 execute mstc-db --remote --file=schema-upgrade-pinned.sql
-npx wrangler d1 execute mstc-db --remote --file=schema-upgrade-featured-photos.sql
-npx wrangler d1 execute mstc-db --remote --file=schema-upgrade-event-end-date.sql
-
-# 3. First admin account (real email + strong password!)
-node scripts/create-admin.js you@example.com 'a-long-strong-password' 'Your Name' > admin.sql
-npx wrangler d1 execute mstc-db --remote --file=admin.sql
-rm admin.sql
-
-# 4. Set your real domain in wrangler.toml → SITE_URL, then:
-npm run deploy
-```
-
-Your site is live at `https://mstc-platform.<your-subdomain>.workers.dev`.
-Add a custom domain later: Cloudflare dashboard → Workers → your worker →
-Settings → Domains & Routes (free).
-
-### Turnstile bot protection (admin login)
-1. Cloudflare dashboard → **Turnstile → Add widget** → note the **site key** (public) and the **secret key**
-   (private, longer). They are different values - the secret is the one that goes in step 3.
-2. Put the site key in `wrangler.toml` → `TURNSTILE_SITE_KEY`, and list your real addresses in
-   `TURNSTILE_HOSTNAMES` (comma-separated). The server only accepts tokens issued for those hostnames
-   and for the `login` action.
-3. `npx wrangler secret put TURNSTILE_SECRET` and paste the secret.
-4. Redeploy.
-
-If a site key is set but the secret is missing, **every login is refused** (fail closed) - this prevents
-a half-configured setup from silently skipping the check. To switch Turnstile off completely, clear both
-values. Preview addresses from `wrangler versions upload` are not in `TURNSTILE_HOSTNAMES`, so you cannot
-log in on them (by design); for local development see `.dev.vars.example`.
-
-## 5. Environment variables / config
-
-| Name | Where | Purpose |
-|---|---|---|
-| `SITE_URL` | `wrangler.toml` [vars] | Canonical URLs + social-share metadata. Empty = use the serving domain |
-| `MESSENGER_URL` | `wrangler.toml` [vars] | Community chat link used by the Join buttons (must be `https://`) |
-| `CONTACT_EMAIL` / `CONTACT_PHONE` | `wrangler.toml` [vars] | Contact details shown on the Contact page (phone may be empty) |
-| `TURNSTILE_SITE_KEY` | `wrangler.toml` [vars] | Public Turnstile key. Setting it shows the widget and makes verification mandatory |
-| `TURNSTILE_HOSTNAMES` | `wrangler.toml` [vars] | Comma-separated hostnames allowed to issue login tokens |
-| `TURNSTILE_SECRET` | `wrangler secret` | Private Turnstile key. Required whenever a site key is set |
-| Local secrets | `.dev.vars` (copy from `.dev.vars.example`) | Local-only overrides, gitignored |
-
-## 6. Using the admin
-
-- Login: `/admin/login` · Dashboard: `/admin`
-- **Dashboard**: counts, recent announcements, recent activity
-- **Announcements**: drafts / publish / archive / delete, categories, featured image,
-  optional scheduled date. Written in **Markdown** (toolbar, live Preview and a help sheet in the
-  editor). Admins can **pin** an announcement to the top of the site. Public clean URLs:
-  `/announcements/your-title`
-- **Events**: start date and time, optional finish date and time, location, status
-  (draft/published/cancelled), optional pin. All times are **Philippine time (UTC+8)**. An event
-  moves to "Past events" by itself the minute its finish passes and shows "Happening now" while it
-  runs. No finish date = ends on the start date; no finish time = runs to the end of its last day.
-- **Photos**: upload (auto-resized in the browser to save storage), captions, alt text.
-  Each photo has two switches: **Show in gallery** and **Show on home page** (the home page shows the
-  chosen photos, or the newest six if none are chosen). An optional **MSTC watermark** (small / medium /
-  large, lower-right corner) can be stamped on upload; it is permanent, off by default, and meant only
-  for originals. Deletion is blocked while an announcement/event uses the image.
-- **Administrators** (Super Admin only): add accounts, change roles, deactivate,
-  reset passwords (old sessions are signed out automatically).
-- **Activity**: audit log of logins, publishes, uploads, account changes.
-
-### Roles
-| Role | Can do |
+| Screen | What it does |
 |---|---|
-| SUPER_ADMIN | Everything, including managing administrator accounts |
-| ADMIN | All announcements, events, photos, activity log |
-| EDITOR | Create/edit/publish/archive **their own** announcements; can pick existing photos as featured images (read-only). Cannot delete, or use Events/Photos/Administrators/Activity |
+| **Home** | Latest announcement, the next event (date, time, location, live countdown) and quick shortcuts. Pull down to refresh. |
+| **News** | All MSTC announcements with photos, categories (Community, Recruitment, Training, Event) and pinned posts. Posts open in a clean **in-app reader** with tappable links. |
+| **Events** | Tap an event for details. **Share** it with friends, or **add it to your phone's calendar** with a 1-hour reminder. |
+| **Notifications** | History of new posts and events, with read/unread state kept on your phone. |
+| **Tools** | Training log and rank, training tools, score counter and rules (see below). |
+| **More** | **What's New** (changelog), Notifications, Enquiry form, the MSTC website (opens inside the app) and About, with **update check**. |
 
-## 7. Backups
+### Tools tab
 
-**Database** (run occasionally, keep the file somewhere safe):
+The **Tools** tab starts with **My Progress** (the **Training Log & Rank**: every minute you train in the app is saved on your phone and earns rank points toward eight ranks, with weekly quests, streaks and a promotion series), then **Training** (warm-up, HIIT timer, flexibility), **Match** (score counter) and **Reference** (rules and court).
+
+| Tool | What it does |
+|---|---|
+| **Warm-Up Guide** | 24 steps in four phases, about 15 minutes. A 5-second **Get ready** before every exercise, a pause between sides, and a full-screen view that follows you: green for right, red for left, amber for rest, with direction colours (forward, back, sideways) and a rep counter. Neck work alternates right/left and down/up on screen. Ends with a 30-second rest before training. |
+| **HIIT Interval Timer** | Work/rest rounds with a 5-second get-ready, with presets (5 × 2' / 30", 8 × 1' / 20", 3 × 3' / 60") and your own saved presets (**+ Custom**; press and hold one to delete it). Full-screen view with a **NEXT** card shortly before each change. |
+| **Flexibility & Kicking Mobility** | 7 exercises, 2 sets each: Butterfly, Seated Straddle, Single-Leg Hamstring, Active Straight-Leg Raises, Supported Front and Middle Split progressions and a Hip Hinge. Position, target muscles, how-to cues, an easier option, a set/rest timer, a progression plan and safety rules. Best after training or on rest days. |
+| **Score Counter** | Team A vs Team B with editable names, and a manual **landscape** button (it returns to portrait when you leave). |
+| **Rules & Court** | Quick reference for rules and court layout. |
+
+Timers and the warm-up use short beeps, a soft rhythm tick and a small vibration. Sound can be muted with the speaker button (the choice is remembered). Sounds play even if the phone is on silent and don't stop your music. The screen stays awake while any tool is open.
+
+---
+
+## Install on your phone
+
+1. Open the [latest release](https://github.com/Roo0722/mstconnect-app-free/releases/latest) and download **`MSTConnect.apk`** (or use the button at the top of this page).
+2. Open the file on your phone. If Android asks, allow **Install unknown apps** for your browser or file manager.
+3. To update later, install the newer APK over the old one. The app also shows an **"update available"** notice when a newer release exists.
+
+Your saved presets and read notifications stay on your phone when you update.
+
+---
+
+## How it works
+
+The app has no server of its own. It reads the **public pages of the MSTC platform**:
+
+```
+https://mstc-platform.thereal-jnjnbnd.workers.dev
+  /announcements   → News, Home, Notifications
+  /events          → Next event, Events
+```
+
+- Pages are turned into native cards, so anything posted on the website appears in the app.
+- Tapping a post loads its page and shows just the content (title, photos, paragraphs, lists, links) in the in-app reader. If a post can't be read as text, it falls back to showing the page inside the app.
+- Notifications are built on the phone from the announcements. There are no accounts, and nothing personal is stored on a server.
+
+To use a different address, change `EXPO_PUBLIC_API_URL` in `.github/workflows/build-apk.yml`.
+
+> **Heads-up:** because the app reads the website's pages, a big redesign of the site's HTML could affect how cards are read. The reading code is in `frontend/src/api.ts`, the only place to adjust.
+
+The **Enquiry** form sends messages to the MSTC team through [Formspree](https://formspree.io) (the endpoint is set in `frontend/app/enquiry.tsx`).
+
+---
+
+## Push notifications (optional, free)
+
+The app can notify members about new announcements and events, plus a "starts in 1 hour" reminder, even when it's closed. It uses Firebase Cloud Messaging and a small separate Cloudflare Worker (`push-worker/worker.js`) that reads the same database as the platform. It never changes the live platform Worker. Setup guide: **[`push-worker/SETUP.md`](push-worker/SETUP.md)**.
+
+Without that setup the app works exactly as before. It just doesn't send notifications.
+
+---
+
+## Build it yourself (free)
+
+The APK is built by **GitHub Actions**; a public repository gets unlimited free builds.
+
+1. Push the project to the `main` branch of a **public** GitHub repository.
+2. Open the **Actions** tab. **Build Android APK** starts by itself (or click it, then **Run workflow**). It takes about 10–20 minutes.
+3. When it shows a green check, open **Releases** and download `MSTConnect.apk`.
+
+Every push that changes anything under `frontend/` builds a new APK as a new release.
+
+<details>
+<summary><b>Signing your own key</b></summary>
+
+With no extra setup, the APK is signed with a default debug key, which is fine for installing directly on phones. To use your own key, add these four repository secrets (Settings → Secrets and variables → Actions):
+
+`KEYSTORE_B64` (keystore file, base64-encoded) · `KEYSTORE_PASSWORD` · `KEY_ALIAS` · `KEY_PASSWORD`
+
+A properly signed key is also required for Google Play. The Android package is `com.mstc.mstconnect`.
+</details>
+
+<details>
+<summary><b>Run it on your computer</b></summary>
+
+Requirements: Node.js 22+.
+
 ```bash
-npx wrangler d1 export mstc-db --remote --output mstc-backup.sql
+cd frontend
+npm install --legacy-peer-deps
+npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar expo-screen-orientation expo-calendar -- --legacy-peer-deps
+npx expo start
 ```
 
-**Photos** are inside the database export above, so one backup file covers everything.
-Keep your original photos in the optional Google Drive archive as well.
+Scan the QR code with **Expo Go**, or press `a` for an Android emulator. The extra packages are installed with `expo install` so their versions match the Expo SDK; the GitHub workflow does the same.
+</details>
 
-**Optional Google Drive archive** (manual, not required for the site to work):
-administrators may keep originals and documents in a human-managed Drive folder:
+<details>
+<summary><b>Change the warm-up, stretches or timer presets</b></summary>
+
+- Warm-up steps, wording and timing: `frontend/src/warmupData.ts`
+- Advanced stretches: `frontend/src/stretchData.ts`
+- Built-in timer presets: the `PRESETS` list at the top of `frontend/app/tools/timer.tsx`
+</details>
+
+---
+
+## Project structure
 
 ```
-MSTC Archive/
-├── 2026/
-│   ├── Announcements/
-│   ├── Events/
-│   ├── Training/
-│   └── Photos/
-├── 2027/
-└── Documents/
+.
+├── .github/workflows/build-apk.yml   # builds the APK on GitHub Actions
+├── docs/screenshots/                 # images used in this README
+├── push-worker/                      # optional free push-notification Worker + setup guide
+└── frontend/                         # the Expo / React Native app
+    ├── app/                          # screens (Expo Router)
+    │   ├── (tabs)/                   #   Home, News, Tools, More
+    │   ├── tools/                    #   timer, warmup, stretches, score, rules
+    │   ├── article.tsx               #   in-app post reader (share, add to calendar)
+    │   ├── website.tsx               #   in-app website viewer
+    │   └── notifications.tsx · enquiry.tsx · about.tsx
+    ├── src/
+    │   ├── api.ts                    # reads the MSTC pages, builds cards & notifications
+    │   ├── warmupData.ts · stretchData.ts   # editable routines
+    │   ├── warmupEngine.ts · timerLogic.ts  # timing logic (rhythm, reps, cues)
+    │   ├── FullScreenTimer.tsx       # shared full-screen timer view
+    │   ├── sound.ts                  # beeps, ticks, haptics, mute settings
+    │   ├── push.ts · update.ts       # push registration, update check
+    │   ├── links.ts · RichText.tsx   # tappable links in posts
+    │   └── theme.ts                  # colours and spacing
+    ├── assets/                       # icon, splash, sounds
+    └── app.json                      # app name, ID, icon and splash settings
 ```
 
-The website never talks to Google Drive; if Drive is unavailable, nothing breaks.
+---
 
-## 8. Security notes
+## Roadmap
 
-- Passwords: PBKDF2-SHA256, 100,000 iterations, per-user salt. Never plaintext.
-- Sessions: random 256-bit tokens; only the SHA-256 hash is stored.
-  Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on HTTPS. 7-day expiry.
-- Login lockout: 5 failed attempts per email within 15 minutes → temporary lock.
-- Every admin API checks the session + role server-side. Mutations require a custom
-  header (`X-MSTC-Request`) as CSRF protection.
-- Uploads: type + magic-byte validation, 3 MB limit, JPG/PNG/WebP/GIF only (SVG rejected). Served with `nosniff` and a locked-down CSP.
-- Request bodies are size-capped (200 KB JSON) before parsing.
-- Login: per-email lockout (5 fails / 15 min) **and** per-IP throttle (20 fails / 15 min); constant-time-ish response for unknown emails; expired sessions and old attempts are pruned automatically.
-- Security headers on public pages (CSP, HSTS, frame-ancestors none) and on `/admin/*` via `public/_headers`. API responses are `no-store`.
-- All public page output is HTML-escaped; announcement content is plain text only.
-- Turnstile (optional) adds bot protection to the login form.
+Ideas being considered, not promises: a match timer with set scoring, a training log, an offline cache for News and Events, and a members area (with proper privacy safeguards) built on the website's admin panel.
 
-## 9. Free-tier notes
+<details>
+<summary><b>What changed from the original Emergent build</b></summary>
 
-- Public pages are cached for 60 s (`Cache-Control`), so a traffic spike does not multiply D1 reads.
-  Photos are cached for a year (`immutable`; every upload gets a unique key).
-- Photos are resized in the admin's browser (max 1600 px, JPEG, under ~900 KB) before upload, so only one
-  small copy is stored inside D1. The server rejects images over 1.2 MB (D1 allows 2 MB per row). The gallery uses that single copy with `loading="lazy"`.
-- Worker requests: 100,000/day free. D1: 5 M rows read/day, 100 k rows written/day. Photos live in D1 (free storage limit applies; ~0.5 MB per photo means hundreds of photos fit).
-  A community site of this kind sits far below all of these. Check current limits at
-  <https://developers.cloudflare.com/workers/platform/limits/>.
-- **Workers vs Pages:** this project deploys as one Worker with Static Assets (Cloudflare's current
-  recommended path for full-stack apps, still free). It uses the free D1 and Turnstile only.
+The app started as an Emergent-generated project that depended on Emergent's hosting and a credit-limited database. It was reworked to run entirely free:
 
-## 10. Tests
+- No Emergent, no database: the app reads the MSTC platform's public pages.
+- Free APK builds with GitHub Actions, published to Releases.
+- New app identity (`com.mstc.mstconnect`, *MSTConnect*) and new icon and splash.
+- In-app post reader, website viewer, tappable links and pull to refresh.
+- Local notifications, plus optional push notifications through a free Cloudflare Worker and Firebase.
+- Event date, time and location read correctly (including 24-hour ranges like 07:00–11:30).
+- Sound, haptics and screen wake lock on the tools; new warm-up, stretches, full-screen timers, share, calendar and custom presets.
+</details>
 
-```bash
-npm test        # Node 22+, no install needed
-```
+---
 
-Runs the real Worker code against an in-memory SQLite (D1 shim): public pages, SEO tags,
-login/lockout, cookies, CSRF, role checks on every admin API, draft/scheduled/archived visibility,
-XSS escaping, upload validation, path traversal, audit log. It complements — not replaces — a
-manual smoke test on your real deployment (see checklist below).
+## Known limits
 
-**Post-deploy smoke test (5 minutes):** open `/`, log in at `/admin/login`, create a draft, publish it,
-upload a photo, set it as featured image, create an event, open the public announcement and paste its
-URL into the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) to confirm the preview.
+- Content depends on the MSTC platform being online. Without a connection, News shows an empty state with a link to view announcements inside the app.
+- No user accounts and no cloud sync, by design, to keep the app free.
+- Event details are read from the layout of the website's Events page. If that layout changes, the reading code in `frontend/src/api.ts` may need a small adjustment.
 
-## 11. Honest-content policy
+---
 
-MSTC is new and recruiting. The platform ships with **no fake content** — no
-invented members, coaches, events, statistics, or testimonials. Everything the
-public sees is either fixed community copy or real content entered by an
-administrator. Keep it that way.
+## License
+
+The source code is released under the [MIT License](LICENSE). You are free to use, copy and adapt it, as long as the copyright notice is kept.
+
+The **MSTC name, logo, icon and photos** are not part of that license. They belong to the Malitbog Sepak Takraw Community and may not be reused without permission.
+
+## Credits
+
+Built for the **Malitbog Sepak Takraw Community (MSTC)**. *Play. Reconnect. Pass It On.*

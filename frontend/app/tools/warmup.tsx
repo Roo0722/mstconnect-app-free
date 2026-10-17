@@ -5,6 +5,7 @@ import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
+import { useActivityTracker } from "../../src/game/useTracker";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue, preloadSounds } from "../../src/sound";
 import { FullScreenTimer } from "../../src/FullScreenTimer";
@@ -29,6 +30,7 @@ export default function WarmupScreen() {
   const router = useRouter();
   const [full, setFull] = useState(false);
   const [running, setRunning] = useState(false);
+  useActivityTracker("warmup", running);
   const [pos, setPos] = useState<Pos>({ idx: 0, elapsed: 0 });
   const [open, setOpen] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);

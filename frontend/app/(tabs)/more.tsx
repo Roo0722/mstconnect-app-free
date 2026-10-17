@@ -4,10 +4,12 @@ import { useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
+import { useChangelogUnseen } from "../../src/changelogSeen";
 
 type Row = { key: string; title: string; subtitle: string; icon: any; route: any };
 
 const ROWS: Row[] = [
+  { key: "changelog", title: "What's New", subtitle: "Latest changes in the app", icon: "sparkles-outline", route: "/changelog" },
   { key: "notifications", title: "Notifications", subtitle: "In-app history", icon: "notifications-outline", route: "/notifications" },
   { key: "enquiry", title: "Enquiry", subtitle: "Reach the MSTC team", icon: "mail-outline", route: "/enquiry" },
   { key: "website", title: "MSTC Website", subtitle: "Open the main site", icon: "globe-outline", route: "/website" },
@@ -17,6 +19,7 @@ const ROWS: Row[] = [
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const unseen = useChangelogUnseen();
   return (
     <View style={styles.root}>
       <BackgroundGlow />
@@ -34,7 +37,9 @@ export default function MoreScreen() {
             <Pressable
               key={r.key}
               testID={`more-${r.key}`}
-              style={[styles.row, i < ROWS.length - 1 && styles.rowDivider]}
+              style={({ pressed }) => [styles.row, i < ROWS.length - 1 && styles.rowDivider, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${r.title}. ${r.subtitle}`}
               onPress={() => router.push(r.route)}
             >
               <View style={styles.rowIcon}>
@@ -44,6 +49,11 @@ export default function MoreScreen() {
                 <Text style={styles.rowTitle}>{r.title}</Text>
                 <Text style={styles.rowSub}>{r.subtitle}</Text>
               </View>
+              {r.key === "changelog" && unseen ? (
+                <View style={styles.newChip}>
+                  <Text style={styles.newChipText}>NEW</Text>
+                </View>
+              ) : null}
               <Ionicons name="chevron-forward" size={18} color={colors.muted} />
             </Pressable>
           ))}
@@ -82,6 +92,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceTertiary,
     alignItems: "center", justifyContent: "center",
   },
+  newChip: { backgroundColor: colors.brandPrimary, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  newChipText: { color: colors.onBrandPrimary, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   rowTitle: { color: colors.onSurface, fontSize: 15, fontWeight: "700" },
   rowSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
 });

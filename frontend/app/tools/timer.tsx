@@ -6,6 +6,7 @@ import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../../src/theme";
+import { useActivityTracker } from "../../src/game/useTracker";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue, preloadSounds, useSoundEnabled } from "../../src/sound";
 import { segLook } from "../../src/sideColors";
@@ -82,6 +83,7 @@ export default function TimerScreen() {
     ]);
   };
   const [running, setRunning] = useState(false);
+  useActivityTracker("hiit", running, `${preset.rounds} x ${preset.work}s / ${preset.rest}s`);
   const [phase, setPhase] = useState<Phase>("work");
   const [remaining, setRemaining] = useState(preset.work);
   const [round, setRound] = useState(1);
