@@ -6,7 +6,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 import { channel, checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
-import { openUpdate } from "../src/UpdatePrompt";
+import { useInstall } from "../src/installUpdate";
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets();
@@ -15,6 +15,8 @@ export default function AboutScreen() {
   const [checking, setChecking] = useState(false);
   const [msg, setMsg] = useState("");
   const [found, setFound] = useState<UpdateInfo | null>(null);
+  const { state, pct, start } = useInstall();
+  const working = state === "downloading" || state === "installing";
 
   const check = async () => {
     setChecking(true);
@@ -77,10 +79,13 @@ export default function AboutScreen() {
           {found ? (
             <View style={{ gap: 8 }}>
               <Text style={styles.bulletText}>Build {found.build} is available.</Text>
-              <Pressable onPress={() => openUpdate(found)} style={styles.updateBtn}>
+              <Pressable disabled={working} onPress={() => start(found)} style={[styles.updateBtn, working && { opacity: 0.8 }]}>
                 <Ionicons name="cloud-download-outline" size={16} color={colors.onBrandPrimary} />
-                <Text style={styles.updateBtnText}>Download and install</Text>
+                <Text style={styles.updateBtnText}>
+                  {state === "installing" ? "Opening installer…" : state === "downloading" ? (pct >= 0 ? `Downloading… ${pct}%` : "Downloading…") : state === "error" ? "Try again" : "Download and install"}
+                </Text>
               </Pressable>
+              {state === "error" ? <Text style={styles.bulletText}>Couldn't download. Check your connection and try again.</Text> : null}
             </View>
           ) : null}
         </View>

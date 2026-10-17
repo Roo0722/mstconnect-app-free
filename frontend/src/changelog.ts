@@ -4,6 +4,17 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-18-in-app-update",
+    date: "18 Oct 2026",
+    title: "Update inside the app",
+    tag: "Beta",
+    items: [
+      "Updates now download inside the app with a progress percentage. No browser needed.",
+      "Android shows its own install screen to confirm. The first time, allow installs from MSTConnect.",
+      "Fixed the exercise name Standing Straight-Leg Raises, plus clearer wording in the warm-up (Toes-In and Toes-Out Calf Raises).",
+    ],
+  },
+  {
     id: "2026-10-18-training-log",
     date: "18 Oct 2026",
     title: "Training log and ranks",

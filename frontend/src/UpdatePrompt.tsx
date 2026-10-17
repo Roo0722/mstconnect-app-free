@@ -1,22 +1,14 @@
 import { useEffect, useState } from "react";
-import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { checkForUpdate, installedBuild, shortNotes, snoozeUpdate, type UpdateInfo } from "./update";
 import { colors, radius, spacing } from "./theme";
-
-export async function openUpdate(info: UpdateInfo) {
-  try {
-    await Linking.openURL(info.apkUrl);
-  } catch {
-    try {
-      await Linking.openURL(info.pageUrl);
-    } catch {}
-  }
-}
+import { openInBrowser, useInstall } from "./installUpdate";
 
 // Pops up once when a newer APK is on GitHub. Does nothing in dev builds or when offline.
 export function UpdatePrompt() {
   const [info, setInfo] = useState<UpdateInfo | null>(null);
+  const { state, pct, start, reset } = useInstall();
 
   useEffect(() => {
     let alive = true;
@@ -37,8 +29,11 @@ export function UpdatePrompt() {
 
   if (!info) return null;
   const notes = shortNotes(info.notes);
+  const working = state === "downloading" || state === "installing";
   const close = () => {
+    if (working) return;
     snoozeUpdate(info.build);
+    reset();
     setInfo(null);
   };
 
@@ -58,20 +53,34 @@ export function UpdatePrompt() {
               <Text style={styles.notes}>{notes}</Text>
             </ScrollView>
           ) : null}
-          <Pressable
-            testID="update-now"
-            style={styles.primary}
-            onPress={() => {
-              openUpdate(info);
-              setInfo(null);
-            }}
-          >
-            <Text style={styles.primaryText}>Update</Text>
+          {state === "error" ? (
+            <Text style={styles.error}>Couldn't download inside the app. Check your connection and try again.</Text>
+          ) : null}
+          <Pressable testID="update-now" disabled={working} style={[styles.primary, working && { opacity: 0.8 }]} onPress={() => start(info)}>
+            {working ? (
+              <View style={styles.row}>
+                <ActivityIndicator color={colors.onBrandPrimary} />
+                <Text style={styles.primaryText}>
+                  {state === "installing" ? "Opening installer…" : pct >= 0 ? `Downloading… ${pct}%` : "Downloading…"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.primaryText}>{state === "error" ? "Try again" : "Download & install"}</Text>
+            )}
           </Pressable>
-          <Pressable testID="update-later" onPress={close} style={styles.secondary}>
-            <Text style={styles.secondaryText}>Later</Text>
-          </Pressable>
-          <Text style={styles.hint}>Tap the downloaded file to install. Android may ask you to allow it once.</Text>
+          {state === "error" ? (
+            <Pressable onPress={() => openInBrowser(info)} style={styles.secondary}>
+              <Text style={styles.secondaryText}>Open in browser instead</Text>
+            </Pressable>
+          ) : null}
+          {!working ? (
+            <Pressable testID="update-later" onPress={close} style={styles.secondary}>
+              <Text style={styles.secondaryText}>Later</Text>
+            </Pressable>
+          ) : null}
+          <Text style={styles.hint}>
+            Android will ask you to confirm the install. The first time, it may ask you to allow installs from MSTConnect. Allow it, then tap Download & install again.
+          </Text>
         </View>
       </View>
     </Modal>
@@ -93,5 +102,7 @@ const styles = StyleSheet.create({
   primaryText: { color: colors.onBrandPrimary, fontSize: 15, fontWeight: "800" },
   secondary: { paddingVertical: 10, alignItems: "center" },
   secondaryText: { color: colors.muted, fontSize: 14, fontWeight: "700" },
+  row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  error: { color: colors.error, fontSize: 12, textAlign: "center" },
   hint: { color: colors.finePrint, fontSize: 11, textAlign: "center" },
 });
