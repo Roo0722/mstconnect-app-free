@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView, Alert, Switch } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -17,9 +17,12 @@ const PRESETS = [
   { label: "5 × 2' / 30\"", work: 120, rest: 30, rounds: 5 },
   { label: "8 × 1' / 20\"", work: 60, rest: 20, rounds: 8 },
   { label: "3 × 3' / 60\"", work: 180, rest: 60, rounds: 3 },
+  { label: "30 min · 20 × 1' / 30\"", work: 60, rest: 30, rounds: 20 },
+  { label: "60 min · 40 × 1' / 30\"", work: 60, rest: 30, rounds: 40 },
 ];
 
 const CUSTOM_KEY = "mstc:presets";
+const SKIP_KEY = "mstc:hiit-skip-last-rest";
 type CustomPreset = { label: string; work: number; rest: number; rounds: number };
 const short = (sec: number) => {
   const m = Math.floor(sec / 60);
@@ -89,14 +92,22 @@ export default function TimerScreen() {
   const [round, setRound] = useState(1);
   // "Get ready" countdown before round 1: null = not started yet, 0 = finished
   const [lead, setLead] = useState<number | null>(null);
+  const [skipLast, setSkipLast] = useState(false); // end right after the last work round (no final rest)
+  useEffect(() => {
+    AsyncStorage.getItem(SKIP_KEY).then((v) => setSkipLast(v === "1")).catch(() => {});
+  }, []);
+  const changeSkip = (v: boolean) => {
+    setSkipLast(v);
+    AsyncStorage.setItem(SKIP_KEY, v ? "1" : "0").catch(() => {});
+  };
   const [soundOn, setSoundOn] = useSoundEnabled();
   const [full, setFull] = useState(false);
   useKeepAwake("mstc-timer"); // screen stays on while the timer screen is open
   useEffect(() => preloadSounds(), []);
 
   // latest values for the 1-second interval (avoids stale closures)
-  const latest = useRef({ phase, remaining, round, preset, lead });
-  latest.current = { phase, remaining, round, preset, lead };
+  const latest = useRef({ phase, remaining, round, preset, lead, skipLast });
+  latest.current = { phase, remaining, round, preset, lead, skipLast };
 
   useEffect(() => {
     reset();
@@ -114,7 +125,7 @@ export default function TimerScreen() {
         cue(l === 0 ? "start" : l <= 3 ? "beep" : "none");
         return;
       }
-      const res = tickTimer({ phase: cur.phase, remaining: cur.remaining, round: cur.round }, cur.preset);
+      const res = tickTimer({ phase: cur.phase, remaining: cur.remaining, round: cur.round }, cur.preset, cur.skipLast);
       setPhase(res.state.phase);
       setRemaining(res.state.remaining);
       setRound(res.state.round);
@@ -151,8 +162,9 @@ export default function TimerScreen() {
   if (full) {
     const perRound = preset.work + preset.rest;
     const done = (round - 1) * perRound + (isWork ? preset.work - remaining : preset.work + preset.rest - remaining);
-    const total = perRound * preset.rounds; // the timer also rests after the last round
+    const total = perRound * preset.rounds - (skipLast ? preset.rest : 0);
     const nextText = isWork ? `REST · ${preset.rest} s` : round >= preset.rounds ? "FINISH" : `ROUND ${round + 1}`;
+    const lastWork = isWork && round >= preset.rounds && skipLast;
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
@@ -164,7 +176,7 @@ export default function TimerScreen() {
           accent={look?.accent ?? colors.brandPrimary}
           tint={look?.tint}
           urgent={running && (getReady ? lead! <= 3 : remaining <= 3 && (isWork ? preset.work : preset.rest) > 5)}
-          nextUp={getReady ? "ROUND 1" : remaining <= 5 ? nextText : null}
+          nextUp={getReady ? "ROUND 1" : remaining <= 5 ? (lastWork ? "FINISH" : nextText) : null}
           running={running}
           onToggle={toggle}
           onClose={() => setFull(false)}
@@ -219,6 +231,17 @@ export default function TimerScreen() {
           </Pressable>
         </View>
 
+        <Text style={styles.total}>
+          Total {fmt(preset.rounds * (preset.work + preset.rest) - (skipLast ? preset.rest : 0))}
+        </Text>
+        <View style={styles.optRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.optTitle}>End after the last work round</Text>
+            <Text style={styles.optSub}>Skips the final rest, so you finish as soon as the last work round ends.</Text>
+          </View>
+          <Switch value={skipLast} onValueChange={changeSkip} trackColor={{ true: colors.brandSecondary }} accessibilityLabel="End after the last work round" />
+        </View>
+
         <Text style={styles.sectionLabel}>PRESETS</Text>
         <View style={styles.presetsRow}>
           {allPresets.map((p, i) => (
@@ -239,9 +262,9 @@ export default function TimerScreen() {
         {custom.length ? <Text style={styles.hint}>Tip: press and hold your own preset to delete it.</Text> : null}
         {editor ? (
           <View style={styles.editor}>
-            <Stepper label="Work" value={short(editor.work)} onMinus={() => setEditor({ ...editor, work: Math.max(5, editor.work - 5) })} onPlus={() => setEditor({ ...editor, work: Math.min(600, editor.work + 5) })} />
-            <Stepper label="Rest" value={short(editor.rest)} onMinus={() => setEditor({ ...editor, rest: Math.max(5, editor.rest - 5) })} onPlus={() => setEditor({ ...editor, rest: Math.min(300, editor.rest + 5) })} />
-            <Stepper label="Rounds" value={String(editor.rounds)} onMinus={() => setEditor({ ...editor, rounds: Math.max(1, editor.rounds - 1) })} onPlus={() => setEditor({ ...editor, rounds: Math.min(30, editor.rounds + 1) })} />
+            <Stepper label="Work" value={short(editor.work)} onMinus={() => setEditor((e) => e && { ...e, work: Math.max(5, e.work - 5) })} onPlus={() => setEditor((e) => e && { ...e, work: Math.min(600, e.work + 5) })} />
+            <Stepper label="Rest" value={short(editor.rest)} onMinus={() => setEditor((e) => e && { ...e, rest: Math.max(5, e.rest - 5) })} onPlus={() => setEditor((e) => e && { ...e, rest: Math.min(300, e.rest + 5) })} />
+            <Stepper label="Rounds" value={String(editor.rounds)} onMinus={() => setEditor((e) => e && { ...e, rounds: Math.max(1, e.rounds - 1) })} onPlus={() => setEditor((e) => e && { ...e, rounds: Math.min(30, e.rounds + 1) })} />
             <Pressable style={styles.save} onPress={addCustom}>
               <Text style={styles.saveText}>Save {labelFor(editor.work, editor.rest, editor.rounds)}</Text>
             </Pressable>
@@ -304,6 +327,10 @@ const styles = StyleSheet.create({
   presetActive: { backgroundColor: colors.brandSecondary, borderColor: colors.brandSecondary },
   presetText: { color: colors.onSurface, fontSize: 13, fontWeight: "700" },
   presetTextActive: { color: colors.onBrandSecondary },
+  total: { color: colors.muted, fontSize: 12, fontWeight: "700", letterSpacing: 1, marginBottom: spacing.sm },
+  optRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, alignSelf: "stretch", backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.lg },
+  optTitle: { color: colors.onSurface, fontSize: 14, fontWeight: "800" },
+  optSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
   hint: { color: colors.finePrint, fontSize: 11, alignSelf: "flex-start", marginTop: spacing.sm },
   editor: { alignSelf: "stretch", backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginTop: spacing.md, gap: spacing.sm },
   stepRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
@@ -314,13 +341,50 @@ const styles = StyleSheet.create({
   saveText: { color: colors.onBrandPrimary, fontSize: 14, fontWeight: "800" },
 });
 
+function HoldButton({ icon, onStep, label }: { icon: "add" | "remove"; onStep: () => void; label: string }) {
+  const step = useRef(onStep);
+  step.current = onStep; // always the latest handler, so repeating keeps working as the value changes
+  const delay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loop = useRef<ReturnType<typeof setInterval> | null>(null);
+  const repeated = useRef(false);
+  const stop = useCallback(() => {
+    if (delay.current) clearTimeout(delay.current);
+    if (loop.current) clearInterval(loop.current);
+    delay.current = null;
+    loop.current = null;
+  }, []);
+  useEffect(() => stop, [stop]);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}
+      onPressIn={() => {
+        repeated.current = false;
+        stop();
+        delay.current = setTimeout(() => {
+          repeated.current = true;
+          step.current();
+          loop.current = setInterval(() => step.current(), 90);
+        }, 400);
+      }}
+      onPressOut={stop}
+      onPress={() => {
+        if (!repeated.current) step.current(); // a quick tap = one step; holding = repeat
+      }}
+    >
+      <Ionicons name={icon} size={18} color={colors.onSurface} />
+    </Pressable>
+  );
+}
+
 function Stepper({ label, value, onMinus, onPlus }: { label: string; value: string; onMinus: () => void; onPlus: () => void }) {
   return (
     <View style={styles.stepRow}>
       <Text style={styles.stepLabel}>{label}</Text>
-      <Pressable onPress={onMinus} style={styles.stepBtn}><Ionicons name="remove" size={18} color={colors.onSurface} /></Pressable>
+      <HoldButton icon="remove" onStep={onMinus} label={`${label} less`} />
       <Text style={styles.stepValue}>{value}</Text>
-      <Pressable onPress={onPlus} style={styles.stepBtn}><Ionicons name="add" size={18} color={colors.onSurface} /></Pressable>
+      <HoldButton icon="add" onStep={onPlus} label={`${label} more`} />
     </View>
   );
 }

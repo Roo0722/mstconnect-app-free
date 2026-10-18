@@ -4,13 +4,16 @@ export type TimerState = { phase: Phase; remaining: number; round: number };
 export type Preset = { work: number; rest: number; rounds: number };
 
 // One second passes. Returns the next state plus which sound cue (if any) to play.
-export function tickTimer(s: TimerState, preset: Preset): { state: TimerState; cue: Cue; finished: boolean } {
+export function tickTimer(s: TimerState, preset: Preset, skipLastRest = false): { state: TimerState; cue: Cue; finished: boolean } {
   if (s.remaining > 1) {
     const remaining = s.remaining - 1;
     const length = s.phase === "work" ? preset.work : preset.rest;
     return { state: { ...s, remaining }, cue: remaining <= 3 && length > 5 ? "beep" : "none", finished: false };
   }
   if (s.phase === "work") {
+    if (skipLastRest && s.round >= preset.rounds) {
+      return { state: { phase: "work", remaining: preset.work, round: 1 }, cue: "done", finished: true };
+    }
     return { state: { phase: "rest", remaining: preset.rest, round: s.round }, cue: "rest", finished: false };
   }
   if (s.round >= preset.rounds) {

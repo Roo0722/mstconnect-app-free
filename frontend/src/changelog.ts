@@ -4,6 +4,19 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-19-timer-polish",
+    date: "19 Oct 2026",
+    title: "HIIT timer polish and rank sharing",
+    tag: "Beta",
+    items: [
+      "New 30-minute and 60-minute HIIT presets.",
+      "New option: end after the last work round, with no final rest.",
+      "The HIIT timer shows the total time for the chosen preset.",
+      "Custom preset buttons now repeat when you hold + or -.",
+      "Share your rank from the Training Log & Rank screen.",
+    ],
+  },
+  {
     id: "2026-10-18-in-app-update",
     date: "18 Oct 2026",
     title: "Update inside the app",

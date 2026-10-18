@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing, Alert, LayoutAnimation } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing, Alert, LayoutAnimation, Share } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -34,6 +34,16 @@ function daysLeft(ms: number) {
   return Math.max(0, Math.ceil((ms - Date.now()) / 86_400_000));
 }
 
+function shareRank(g: GameState) {
+  const name = `${g.rankName}${g.division ? ` ${g.division}` : ""}`;
+  const w = g.week;
+  const text =
+    `I'm ${name} on MSTConnect (${g.rawRP.toLocaleString()} RP, ${g.seasonSpan}). ` +
+    `${w.minutes} minutes trained this week${w.streakReached ? `, streak week ${w.streakWeeks}` : ""}. ` +
+    `Train with the Malitbog Sepak Takraw Community!`;
+  Share.share({ message: text }).catch(() => {});
+}
+
 function RankCard({ g }: { g: GameState }) {
   const rank = RANKS[g.level - 1];
   const frac = g.divisionSize ? g.within / g.divisionSize : 1;
@@ -43,9 +53,14 @@ function RankCard({ g }: { g: GameState }) {
         <Text style={styles.eyebrow}>LEVEL {g.level} OF 8</Text>
         <Text style={styles.eyebrow}>{g.seasonSpan.toUpperCase()}</Text>
       </View>
-      <Text style={styles.rankName} accessibilityRole="header">
-        {g.rankName}{g.division ? ` ${g.division}` : ""}
-      </Text>
+      <View style={styles.rowBetween}>
+        <Text style={[styles.rankName, { flex: 1 }]} accessibilityRole="header">
+          {g.rankName}{g.division ? ` ${g.division}` : ""}
+        </Text>
+        <Pressable onPress={() => shareRank(g)} hitSlop={10} style={styles.shareBtn} accessibilityRole="button" accessibilityLabel="Share my rank">
+          <Ionicons name="share-social-outline" size={18} color={colors.onSurface} />
+        </Pressable>
+      </View>
       <Text style={styles.role}>{rank.role}</Text>
 
       {g.division ? (
@@ -292,6 +307,7 @@ export default function TrainingScreen() {
 }
 
 const styles = StyleSheet.create({
+  shareBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
   root: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   backBtn: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.surfaceSecondary, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
