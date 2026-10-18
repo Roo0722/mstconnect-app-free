@@ -6,9 +6,10 @@ export const CHANGELOG: Change[] = [
   {
     id: "2026-10-19-timer-polish",
     date: "19 Oct 2026",
-    title: "HIIT timer polish and rank sharing",
+    title: "HIIT timer polish, rank sharing and emblems",
     tag: "Beta",
     items: [
+      "Each of the eight ranks now has its own emblem, on your rank card and in the rank ladder.",
       "New 30-minute and 60-minute HIIT presets.",
       "New option: end after the last work round, with no final rest.",
       "The HIIT timer shows the total time for the chosen preset.",

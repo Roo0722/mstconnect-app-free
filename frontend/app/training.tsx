@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { format } from "date-fns";
+import { Image } from "expo-image";
+import { EMBLEMS } from "../src/game/emblems";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 import { KIND_LABEL, PROMO_MINUTES, RANKS, RULES, THRESHOLDS, type Kind } from "../src/game/config";
@@ -53,6 +55,7 @@ function RankCard({ g }: { g: GameState }) {
         <Text style={styles.eyebrow}>LEVEL {g.level} OF 8</Text>
         <Text style={styles.eyebrow}>{g.seasonSpan.toUpperCase()}</Text>
       </View>
+      <Image source={EMBLEMS[g.level - 1]} style={styles.heroEmblem} contentFit="contain" transition={250} accessibilityLabel={`${g.rankName} emblem`} />
       <View style={styles.rowBetween}>
         <Text style={[styles.rankName, { flex: 1 }]} accessibilityRole="header">
           {g.rankName}{g.division ? ` ${g.division}` : ""}
@@ -230,8 +233,13 @@ function Ladder({ g }: { g: GameState }) {
             style={({ pressed }) => [styles.ladderRow, cur && styles.ladderCur, pressed && { opacity: 0.88 }]}
           >
             <View style={styles.ladderTop}>
-              <View style={[styles.lvl, cur && { backgroundColor: colors.brandSecondary }, done && { backgroundColor: "#34d399" }]}>
-                {done ? <Ionicons name="checkmark" size={14} color="#0a0a0c" /> : <Text style={[styles.lvlText, cur && { color: "#0a0a0c" }]}>{r.level}</Text>}
+              <View>
+                <Image source={EMBLEMS[r.level - 1]} style={[styles.thumb, !cur && !done && { opacity: 0.5 }]} contentFit="contain" />
+                {done ? (
+                  <View style={styles.doneBadge}>
+                    <Ionicons name="checkmark" size={11} color="#0a0a0c" />
+                  </View>
+                ) : null}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.ladderName, locked && { opacity: 0.6 }]}>{r.name}</Text>
@@ -241,6 +249,7 @@ function Ladder({ g }: { g: GameState }) {
             </View>
             {isOpen ? (
               <View style={{ marginTop: spacing.sm, gap: 4 }}>
+                <Image source={EMBLEMS[r.level - 1]} style={styles.bigEmblem} contentFit="contain" transition={200} />
                 <Text style={styles.profileLabel}>CORE ROLE</Text>
                 <Text style={styles.profile}>{r.role}</Text>
                 <Text style={styles.profileLabel}>PLAYER PROFILE</Text>
@@ -307,6 +316,10 @@ export default function TrainingScreen() {
 }
 
 const styles = StyleSheet.create({
+  heroEmblem: { width: "100%", height: 190, marginVertical: 4 },
+  thumb: { width: 46, height: 46 },
+  doneBadge: { position: "absolute", right: -4, bottom: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: "#34d399", alignItems: "center", justifyContent: "center" },
+  bigEmblem: { width: "100%", height: 150, marginBottom: 6 },
   shareBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceTertiary, alignItems: "center", justifyContent: "center" },
   root: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
