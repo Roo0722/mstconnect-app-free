@@ -4,6 +4,16 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-21-promotion",
+    date: "21 Oct 2026",
+    title: "Promotion screen and a shorter warm-up",
+    tag: "Beta",
+    items: [
+      "When you move up a rank, a full-screen celebration shows your new emblem, with a button to share it. It waits until you leave the timer screens.",
+      "The Warm-Up Guide is about a minute shorter, around 14 minutes with the Get ready counts. Rep counts match the new times.",
+    ],
+  },
+  {
     id: "2026-10-20-rank-plan",
     date: "20 Oct 2026",
     title: "Rank on Home, weekly plan and reminders",
@@ -60,7 +70,7 @@ export const CHANGELOG: Change[] = [
     title: "Training tools, redone",
     tag: "New",
     items: [
-      "Warm-Up Guide: 24 steps in four phases, about 15 minutes, with a 5-second Get ready before every exercise.",
+      "Warm-Up Guide: 24 steps in four phases, about 14 minutes, with a 5-second Get ready before every exercise.",
       "A pause when you switch sides. The screen is green for right, red for left and amber for rest.",
       "Neck movements alternate right and left (and down and up) on screen. Direction colours for forward, back and sideways.",
       "Leg swings split into forward, back and sideways. Controlled kicks go low, middle, high on each leg.",

@@ -8,6 +8,7 @@ import { queryClient } from "@/src/query-client";
 import { usePushSetup } from "@/src/push";
 import { UpdatePrompt } from "@/src/UpdatePrompt";
 import { useReminderSync } from "@/src/plan/useReminderSync";
+import { PromotionModal } from "@/src/plan/PromotionModal";
 
 // Disable logbox errors etc so that users can see the app
 // and agent works as expected.
@@ -25,6 +26,7 @@ export default function RootLayout() {
         <KeyboardProvider>
           <Stack screenOptions={{ headerShown: false }} />
           <UpdatePrompt />
+          <PromotionModal />
         </KeyboardProvider>
       </QueryClientProvider>
     </ErrorBoundary>
