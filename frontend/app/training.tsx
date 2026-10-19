@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing, Alert, LayoutAnimation, Share } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing, Alert, LayoutAnimation } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { format } from "date-fns";
 import { Image } from "expo-image";
 import { EMBLEMS } from "../src/game/emblems";
+import { PlanEditor, ShareCard, TodayCard, shareRankPicture, usePlanWeek } from "../src/plan/ui";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 import { KIND_LABEL, PROMO_MINUTES, RANKS, RULES, THRESHOLDS, type Kind } from "../src/game/config";
@@ -36,21 +37,15 @@ function daysLeft(ms: number) {
   return Math.max(0, Math.ceil((ms - Date.now()) / 86_400_000));
 }
 
-function shareRank(g: GameState) {
-  const name = `${g.rankName}${g.division ? ` ${g.division}` : ""}`;
-  const w = g.week;
-  const text =
-    `I'm ${name} on MSTConnect (${g.rawRP.toLocaleString()} RP, ${g.seasonSpan}). ` +
-    `${w.minutes} minutes trained this week${w.streakReached ? `, streak week ${w.streakWeeks}` : ""}. ` +
-    `Train with the Malitbog Sepak Takraw Community!`;
-  Share.share({ message: text }).catch(() => {});
-}
-
 function RankCard({ g }: { g: GameState }) {
   const rank = RANKS[g.level - 1];
+  const cardRef = useRef<View>(null);
   const frac = g.divisionSize ? g.within / g.divisionSize : 1;
   return (
     <View style={styles.hero}>
+      <View pointerEvents="none" style={{ position: "absolute", left: -2000, top: 0 }}>
+        <ShareCard ref={cardRef} g={g} />
+      </View>
       <View style={styles.heroTop}>
         <Text style={styles.eyebrow}>LEVEL {g.level} OF 8</Text>
         <Text style={styles.eyebrow}>{g.seasonSpan.toUpperCase()}</Text>
@@ -60,7 +55,7 @@ function RankCard({ g }: { g: GameState }) {
         <Text style={[styles.rankName, { flex: 1 }]} accessibilityRole="header">
           {g.rankName}{g.division ? ` ${g.division}` : ""}
         </Text>
-        <Pressable onPress={() => shareRank(g)} hitSlop={10} style={styles.shareBtn} accessibilityRole="button" accessibilityLabel="Share my rank">
+        <Pressable onPress={() => shareRankPicture(cardRef, g)} hitSlop={10} style={styles.shareBtn} accessibilityRole="button" accessibilityLabel="Share my rank as a picture">
           <Ionicons name="share-social-outline" size={18} color={colors.onSurface} />
         </Pressable>
       </View>
@@ -268,6 +263,7 @@ export default function TrainingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { game: g } = useGame();
+  const pw = usePlanWeek();
 
   const confirmClear = () =>
     Alert.alert("Clear training data?", "This deletes your training log and rank progress from this phone. It cannot be undone.", [
@@ -284,13 +280,15 @@ export default function TrainingScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Training Log & Rank</Text>
+          <Text style={styles.title}>Rank & Plan</Text>
           <Text style={styles.subtitle}>{g.seasonSpan} · {daysLeft(g.seasonEndsAt)} days left in the season</Text>
         </View>
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md }}>
         <RankCard g={g} />
+        <TodayCard week={pw.week} plan={pw.plan} trainedToday={pw.trainedToday} />
         <WeekCard g={g} />
+        <PlanEditor week={pw.week} />
         <LogCard />
         <Recent g={g} />
         <Ladder g={g} />

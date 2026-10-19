@@ -21,7 +21,7 @@ function useSections(rankMeta: string): Section[] {
       {
         title: "MY PROGRESS",
         hint: "Rank and training log",
-        tools: [{ key: "training", title: "Training Log & Rank", subtitle: "Your minutes, weekly quests and rank ladder", meta: rankMeta, icon: "medal-outline", route: "/training", accent: "yellow" }],
+        tools: [{ key: "training", title: "Rank & Plan", subtitle: "Your rank, weekly plan, reminders and training log", meta: rankMeta, icon: "medal-outline", route: "/training", accent: "yellow" }],
       },
       {
         title: "TRAINING",

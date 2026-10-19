@@ -7,12 +7,14 @@ import { ErrorBoundary } from "@/src/components/error-boundary";
 import { queryClient } from "@/src/query-client";
 import { usePushSetup } from "@/src/push";
 import { UpdatePrompt } from "@/src/UpdatePrompt";
+import { useReminderSync } from "@/src/plan/useReminderSync";
 
 // Disable logbox errors etc so that users can see the app
 // and agent works as expected.
 LogBox.ignoreAllLogs(true)
 
 export default function RootLayout() {
+  useReminderSync(); // keeps training and event reminders in step with the weekly plan
   usePushSetup(); // registers for push notifications (does nothing if push isn't configured)
 
   // One app level ErrorBoundary; a render crash shows a reload screen

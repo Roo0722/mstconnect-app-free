@@ -7,6 +7,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { api, type MstcEvent } from "../../src/api";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
+import { HomeRank } from "../../src/plan/HomeRank";
 
 function useCountdown(targetIso?: string | null, durationMin: number = 120) {
   const [now, setNow] = useState(() => Date.now());
@@ -177,6 +178,8 @@ export default function HomeScreen() {
           <Ionicons name="sparkles" size={12} color={colors.onBrandSecondary} />
           <Text style={styles.freeChipText}>ALWAYS FREE · NO JOINING FEE</Text>
         </View>
+
+        <HomeRank />
 
         {eventQ.isLoading ? (
           <View style={styles.loadingHero}>

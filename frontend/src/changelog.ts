@@ -4,6 +4,19 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-20-rank-plan",
+    date: "20 Oct 2026",
+    title: "Rank on Home, weekly plan and reminders",
+    tag: "Beta",
+    items: [
+      "Your rank, progress and this week now show on the Home tab. Tap the card to open Rank & Plan.",
+      "New weekly plan: choose your Train, Rest and Club days and the session for each, then get a training reminder at your time.",
+      "MSTC events are added to your plan automatically, with a reminder the evening before and one hour ahead. Cancelled events are removed.",
+      "Share your rank as a picture instead of text.",
+      "Training Log & Rank is now called Rank & Plan in the Tools tab.",
+    ],
+  },
+  {
     id: "2026-10-19-timer-polish",
     date: "19 Oct 2026",
     title: "HIIT timer polish, rank sharing and emblems",
@@ -14,7 +27,7 @@ export const CHANGELOG: Change[] = [
       "New option: end after the last work round, with no final rest.",
       "The HIIT timer shows the total time for the chosen preset.",
       "Custom preset buttons now repeat when you hold + or -.",
-      "Share your rank from the Training Log & Rank screen.",
+      "Share your rank from the Rank & Plan screen.",
     ],
   },
   {

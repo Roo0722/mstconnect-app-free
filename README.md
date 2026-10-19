@@ -48,7 +48,7 @@ MSTConnect puts the community's announcements, events and training tools in your
 
 ### Tools tab
 
-The **Tools** tab starts with **My Progress** (the **Training Log & Rank**: every minute you train in the app is saved on your phone and earns rank points toward eight ranks, with weekly quests, streaks and a promotion series), then **Training** (warm-up, HIIT timer, flexibility), **Match** (score counter) and **Reference** (rules and court).
+The **Tools** tab starts with **My Progress** (the **Rank & Plan**: every minute you train in the app is saved on your phone and earns rank points toward eight ranks, with weekly quests, streaks and a promotion series; plus a weekly training plan with reminders, and MSTC events added automatically. Your rank and week also show on the Home tab, and you can share your rank as a picture), then **Training** (warm-up, HIIT timer, flexibility), **Match** (score counter) and **Reference** (rules and court).
 
 | Tool | What it does |
 |---|---|
