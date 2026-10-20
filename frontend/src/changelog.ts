@@ -4,6 +4,17 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-22-warmup-length",
+    date: "22 Oct 2026",
+    title: "Warm-up length: Short, Standard or Long",
+    tag: "Beta",
+    items: [
+      "Pick your warm-up on the Warm-Up Guide screen. Short is about 8 minutes (the essentials), Standard is about 14 (the everyday one), Long is about 17.",
+      "Long adds squats, single-leg balance, standing hip abduction and shadow inside and outside kicks (no ball) before ball work.",
+      "The app remembers your choice, and your training log notes which length you did.",
+    ],
+  },
+  {
     id: "2026-10-21-promotion",
     date: "21 Oct 2026",
     title: "Promotion screen and a shorter warm-up",

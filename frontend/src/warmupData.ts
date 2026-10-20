@@ -11,9 +11,11 @@ export type WarmupPhase =
   | "Raise body temperature"
   | "Upper body & trunk mobility"
   | "Ankle, calf & hip preparation"
+  | "Standing activation"
   | "Sepak takraw preparation";
 export type WarmupStep = {
   name: string;
+  longOnly?: boolean; // only in the Long warm-up
   noPrep?: boolean; // skip the "Get ready" gap in front of this step (used for the final rest)
   phase: WarmupPhase;
   purpose?: string;
@@ -42,6 +44,7 @@ export const WARMUP_SAFETY = [
 const R = "Raise body temperature" as const;
 const U = "Upper body & trunk mobility" as const;
 const A = "Ankle, calf & hip preparation" as const;
+const T = "Standing activation" as const;
 const S = "Sepak takraw preparation" as const;
 
 export const WARMUP: WarmupStep[] = [
@@ -105,6 +108,17 @@ export const WARMUP: WarmupStep[] = [
     details: ["Lunge forward, elbow toward the instep, rotate and reach up.", "Move smoothly. 3 reps per side."],
     segments: side(21, 3) },
 
+  // Long warm-up only: standing activation (wakes up the hips and legs without tiring them)
+  { name: "Bodyweight Squats", phase: T, longOnly: true,
+    details: ["Feet shoulder-width apart, toes slightly out.", "Sit your hips back and down, chest up, heels on the floor, then stand tall.", "Smooth and controlled. 8 reps."],
+    segments: [{ seconds: 24, reps: 8 }] },
+  { name: "Single-Leg Balance", phase: T, longOnly: true, purpose: "Steady ankles and hips for landing.",
+    details: ["Stand on one leg with a soft knee and lift the other knee to about hip height.", "Keep your hips level and look at one spot. Hold a wall if you need to."],
+    segments: side(20) },
+  { name: "Standing Hip Abduction", phase: T, longOnly: true,
+    details: ["Hold a support, stand tall with your toes pointing forward.", "Lift one leg out to the side, then lower it slowly. Don't lean away.", "8 reps per side."],
+    segments: side(16, 8) },
+
   // Phase 4: sepak takraw preparation
   { name: "Leg Swings", phase: S,
     details: ["Hold a support if needed.", "Begin with small swings and increase gradually.", "Each leg: swing forward, then backward, then sideways (across your body)."],
@@ -116,6 +130,12 @@ export const WARMUP: WarmupStep[] = [
     segments: [
       { label: "Right · low", seconds: 6, reps: 2 }, { label: "Right · middle", seconds: 6, reps: 2 }, { label: "Right · high", seconds: 6, reps: 2 }, swap,
       { label: "Left · low", seconds: 6, reps: 2 }, { label: "Left · middle", seconds: 6, reps: 2 }, { label: "Left · high", seconds: 6, reps: 2 }] },
+  { name: "Shadow Inside Kick", phase: S, longOnly: true, purpose: "Rehearse the basic kick with no ball.",
+    details: ["Lift the knee, turn it out, and swing the inside of your foot across as if kicking a ball.", "Easy speed, then return under control. Hold a support if you need to.", "6 reps per leg."],
+    segments: side(12, 6) },
+  { name: "Shadow Outside Kick", phase: S, longOnly: true,
+    details: ["Lift the leg and swing the outside of your foot up and out as if kicking a ball.", "Easy speed, then return under control. Hold a support if you need to.", "6 reps per leg."],
+    segments: side(12, 6) },
   { name: "Alternating Ball Touches", phase: S,
     details: ["Alternate feet with light, controlled contacts.", "Keep a calm, steady rhythm."],
     segments: [{ seconds: 30, beat: 2 }] },
@@ -129,3 +149,20 @@ export const WARMUP: WarmupStep[] = [
     details: ["Rest and breathe slowly.", "Drink some water and shake out your legs.", "When the timer ends, you are ready to train."],
     segments: [{ label: "Rest", seconds: 30 }] },
 ];
+
+// Three lengths of the same warm-up. Standard is the everyday one; Short keeps the essentials; Long adds standing activation and shadow kicks.
+export type WarmupLength = "short" | "standard" | "long";
+export const WARMUP_LENGTHS: { key: WarmupLength; label: string; about: string }[] = [
+  { key: "short", label: "Short", about: "The essentials, for busy days" },
+  { key: "standard", label: "Standard", about: "The everyday warm-up" },
+  { key: "long", label: "Long", about: "Adds activation and shadow kicks" },
+];
+const SHORT = new Set([
+  "Light March / Jog in Place", "Shoulder & Arm Circles", "Trunk Rotations", "Ankle Rotations", "Basic Calf Raises", "High Knee March",
+  "Hip Openers", "Lateral Lunges", "World's Greatest Dynamic Stretch", "Leg Swings", "Controlled Kicks", "Soft Landing Taps", "Rest, then Training",
+]);
+export function getWarmup(length: WarmupLength): WarmupStep[] {
+  if (length === "short") return WARMUP.filter((s) => SHORT.has(s.name));
+  if (length === "standard") return WARMUP.filter((s) => !s.longOnly);
+  return WARMUP;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, LayoutAnimation } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
@@ -9,16 +10,23 @@ import { useActivityTracker } from "../../src/game/useTracker";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { cue, preloadSounds } from "../../src/sound";
 import { FullScreenTimer } from "../../src/FullScreenTimer";
-import { WARMUP, WARMUP_SAFETY } from "../../src/warmupData";
+import { WARMUP_LENGTHS, WARMUP_SAFETY, getWarmup, type WarmupLength } from "../../src/warmupData";
 import { advance, displayKey, isPrep, stepEvents, stepMs, withPrep, type Pos } from "../../src/warmupEngine";
 import { moment } from "../../src/routineView";
 
 const NEXT_WARNING_MS = 5000;
+const LENGTH_KEY = "mstc:warmup-length";
+
 // every exercise gets a short "Get ready" gap in front of it
-const STEPS = withPrep(WARMUP);
-const EVENTS = STEPS.map((s, i) => stepEvents(s, { followedByPrep: i < STEPS.length - 1 && isPrep(STEPS[i + 1].segments[0]) }));
-const TOTAL_MS = STEPS.reduce((a, s) => a + stepMs(s), 0);
-const STARTS = STEPS.reduce<number[]>((a, s, i) => (a.push(i ? a[i - 1] + stepMs(STEPS[i - 1]) : 0), a), []);
+function build(length: WarmupLength) {
+  const base = getWarmup(length);
+  const steps = withPrep(base);
+  const events = steps.map((s, i) => stepEvents(s, { followedByPrep: i < steps.length - 1 && isPrep(steps[i + 1].segments[0]) }));
+  const total = steps.reduce((a, s) => a + stepMs(s), 0);
+  const starts = steps.reduce<number[]>((a, s, i) => (a.push(i ? a[i - 1] + stepMs(steps[i - 1]) : 0), a), []);
+  return { base, steps, events, total, starts };
+}
+const BUILT = { short: build("short"), standard: build("standard"), long: build("long") };
 
 const fmt = (ms: number) => {
   const s = Math.ceil(ms / 1000);
@@ -30,7 +38,26 @@ export default function WarmupScreen() {
   const router = useRouter();
   const [full, setFull] = useState(false);
   const [running, setRunning] = useState(false);
-  useActivityTracker("warmup", running);
+  const [length, setLength] = useState<WarmupLength>("standard");
+  useActivityTracker("warmup", running, length);
+  useEffect(() => {
+    AsyncStorage.getItem(LENGTH_KEY)
+      .then((v) => {
+        if (v === "short" || v === "standard" || v === "long") setLength(v);
+      })
+      .catch(() => {});
+  }, []);
+  const { base: WARMUP, steps: STEPS, events: EVENTS, total: TOTAL_MS, starts: STARTS } = BUILT[length];
+  const pickLength = (l: WarmupLength) => {
+    if (l === length) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setLength(l);
+    setOpen(null);
+    setFinished(false);
+    posRef.current = { idx: 0, elapsed: 0 };
+    setPos({ idx: 0, elapsed: 0 });
+    AsyncStorage.setItem(LENGTH_KEY, l).catch(() => {});
+  };
   const [pos, setPos] = useState<Pos>({ idx: 0, elapsed: 0 });
   const [open, setOpen] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
@@ -61,7 +88,7 @@ export default function WarmupScreen() {
       clearInterval(id);
       setPos(posRef.current); // when paused, show exactly where we stopped
     };
-  }, [running]);
+  }, [running, STEPS, EVENTS]);
 
   const begin = (idx: number) => {
     const p = { idx, elapsed: 0 };
@@ -92,7 +119,7 @@ export default function WarmupScreen() {
       else out.push({ phase: s.phase, items: [i] });
     });
     return out;
-  }, []);
+  }, [WARMUP]);
 
   if (full) {
     return (
@@ -147,6 +174,25 @@ export default function WarmupScreen() {
             <Text style={styles.doneText}>Warm-up complete. You are ready for training (HIIT).</Text>
           </View>
         ) : null}
+        <View style={styles.seg} accessibilityRole="radiogroup">
+          {WARMUP_LENGTHS.map((l) => {
+            const on = l.key === length;
+            return (
+              <Pressable
+                key={l.key}
+                onPress={() => pickLength(l.key)}
+                style={[styles.segBtn, on && styles.segOn]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={`${l.label} warm-up, about ${Math.round(BUILT[l.key].total / 60000)} minutes`}
+              >
+                <Text style={[styles.segLabel, on && styles.segLabelOn]}>{l.label}</Text>
+                <Text style={[styles.segMin, on && styles.segLabelOn]}>~{Math.round(BUILT[l.key].total / 60000)} min</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={styles.segAbout}>{WARMUP_LENGTHS.find((l) => l.key === length)?.about}</Text>
         <Pressable style={styles.start} onPress={() => begin(0)}>
           <Ionicons name="play" size={22} color={colors.onBrandPrimary} />
           <Text style={styles.startText}>Start warm-up</Text>
@@ -203,6 +249,13 @@ const styles = StyleSheet.create({
   backBtn: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.surfaceSecondary, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
   title: { color: colors.onSurface, fontSize: 22, fontWeight: "900" },
   subtitle: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  seg: { flexDirection: "row", gap: 8, marginBottom: 6 },
+  segBtn: { flex: 1, minHeight: 56, borderRadius: radius.md, backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  segOn: { backgroundColor: colors.brandSecondary, borderColor: colors.brandSecondary },
+  segLabel: { color: colors.onSurface, fontSize: 14, fontWeight: "800" },
+  segLabelOn: { color: colors.onBrandSecondary },
+  segMin: { color: colors.muted, fontSize: 11, marginTop: 1 },
+  segAbout: { color: colors.finePrint, fontSize: 12, marginBottom: spacing.md, textAlign: "center" },
   start: { flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: colors.brandPrimary, borderRadius: radius.lg, paddingVertical: 16, marginBottom: spacing.md },
   startText: { color: colors.onBrandPrimary, fontSize: 17, fontWeight: "900" },
   done: { flexDirection: "row", gap: 8, alignItems: "center", backgroundColor: "rgba(52, 211, 153, 0.15)", borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md },
