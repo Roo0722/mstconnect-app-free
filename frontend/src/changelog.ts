@@ -4,6 +4,17 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-24-offline-download",
+    date: "24 Oct 2026",
+    title: "Offline copy and background update download",
+    tag: "Beta",
+    items: [
+      "Events, announcements and the posts you open are now saved on your phone. With no signal you still see the last copy, with a small Offline note you can tap to retry.",
+      "Updates now download in the background with a progress notification, so you can leave the app or lock the screen while it downloads.",
+      "The downloaded update stays on your phone until it is installed. If you close the pop-up, you will see Install now next time instead of downloading again.",
+    ],
+  },
+  {
     id: "2026-10-23-home-redesign",
     date: "23 Oct 2026",
     title: "Cleaner Home screen",

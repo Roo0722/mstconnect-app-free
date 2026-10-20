@@ -3,18 +3,25 @@ import { ActivityIndicator, AppState, Modal, Pressable, ScrollView, StyleSheet, 
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { checkForUpdate, installedBuild, shortNotes, snoozeUpdate, type UpdateInfo } from "./update";
 import { colors, radius, spacing } from "./theme";
-import { openInBrowser, useInstall } from "./installUpdate";
+import { install, openInBrowser, restoreInstall, useInstall } from "./installUpdate";
 
 // Pops up once when a newer APK is on GitHub. Does nothing in dev builds or when offline.
 export function UpdatePrompt() {
   const [info, setInfo] = useState<UpdateInfo | null>(null);
-  const { state, pct, start, reset } = useInstall();
+  const { state, pct, start, reset, pending, pendingState } = useInstall(info);
+  const [hidden, setHidden] = useState(false); // "keep going in the background" for this session
+
+  // A download that is running, or a finished file waiting to be installed, brings the pop-up back on the next open
+  useEffect(() => {
+    if (!info && !hidden && pending && (pendingState === "ready" || pendingState === "downloading" || pendingState === "installing")) setInfo(pending);
+  }, [info, hidden, pending, pendingState]);
 
   useEffect(() => {
     let alive = true;
     const run = async () => {
+      await restoreInstall();
       const r = await checkForUpdate();
-      if (alive && r.status === "update") setInfo(r.info);
+      if (alive && r.status === "update") setInfo((cur) => cur ?? r.info);
     };
     const t = setTimeout(run, 3000); // let the app finish loading first
     const sub = AppState.addEventListener("change", (s) => {
@@ -30,8 +37,15 @@ export function UpdatePrompt() {
   if (!info) return null;
   const notes = shortNotes(info.notes);
   const working = state === "downloading" || state === "installing";
+  const ready = state === "ready";
   const close = () => {
-    if (working) return;
+    if (state === "installing") return;
+    if (state === "downloading" || ready) {
+      // the download keeps going (or the file stays ready); just hide the pop-up for now
+      setHidden(true);
+      setInfo(null);
+      return;
+    }
     snoozeUpdate(info.build);
     reset();
     setInfo(null);
@@ -56,7 +70,7 @@ export function UpdatePrompt() {
           {state === "error" ? (
             <Text style={styles.error}>Couldn't download inside the app. Check your connection and try again.</Text>
           ) : null}
-          <Pressable testID="update-now" disabled={working} style={[styles.primary, working && { opacity: 0.8 }]} onPress={() => start(info)}>
+          <Pressable testID="update-now" disabled={working} style={[styles.primary, working && { opacity: 0.8 }]} onPress={() => (ready ? install() : start(info))}>
             {working ? (
               <View style={styles.row}>
                 <ActivityIndicator color={colors.onBrandPrimary} />
@@ -65,7 +79,7 @@ export function UpdatePrompt() {
                 </Text>
               </View>
             ) : (
-              <Text style={styles.primaryText}>{state === "error" ? "Try again" : "Download & install"}</Text>
+              <Text style={styles.primaryText}>{ready ? "Install now" : state === "error" ? "Try again" : "Download & install"}</Text>
             )}
           </Pressable>
           {state === "error" ? (
@@ -73,13 +87,13 @@ export function UpdatePrompt() {
               <Text style={styles.secondaryText}>Open in browser instead</Text>
             </Pressable>
           ) : null}
-          {!working ? (
+          {state !== "installing" ? (
             <Pressable testID="update-later" onPress={close} style={styles.secondary}>
-              <Text style={styles.secondaryText}>Later</Text>
+              <Text style={styles.secondaryText}>{state === "downloading" ? "Keep downloading in background" : ready ? "Install later" : "Later"}</Text>
             </Pressable>
           ) : null}
           <Text style={styles.hint}>
-            Android will ask you to confirm the install. The first time, it may ask you to allow installs from MSTConnect. Allow it, then tap Download & install again.
+            The download keeps going if you leave the app, and the file stays on your phone until it's installed. Android will ask you to confirm the install. The first time, it may ask you to allow installs from MSTConnect. Allow it, then tap Install again.
           </Text>
         </View>
       </View>

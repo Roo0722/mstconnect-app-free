@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { withCache } from "./offline";
 
 // Free, no Emergent, no extra backend: the app reads the public pages of the MSTC platform
 // (/announcements and /events) and turns them into native cards. Nothing to host or pay for.
@@ -44,9 +45,16 @@ export type Notification = {
 export const SITE_URL = BASE;
 
 async function getHtml(path: string): Promise<string> {
-  const res = await fetch(`${BASE}${path}`, { headers: { Accept: "text/html" } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return await res.text();
+  // give up after 12 s so a weak signal falls back to the saved copy instead of spinning forever
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 12_000);
+  try {
+    const res = await fetch(`${BASE}${path}`, { headers: { Accept: "text/html" }, signal: ctl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 // ---------- tiny HTML helpers (no dependencies) ----------
@@ -234,7 +242,10 @@ function spansOf(html: string): Span[] {
 
 // Reads one announcement/event page and returns just its content as simple blocks,
 // so the app can show it natively without the website's menus and footer.
-async function getArticle(url: string): Promise<{ title: string; blocks: Block[] }> {
+function getArticle(url: string): Promise<{ title: string; blocks: Block[] }> {
+  return withCache(`article:${url}`, () => loadArticle(url));
+}
+async function loadArticle(url: string): Promise<{ title: string; blocks: Block[] }> {
   const path = url.startsWith(BASE) ? url.slice(BASE.length) : url;
   let html = await getHtml(path);
   const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html);
@@ -278,7 +289,10 @@ async function getArticle(url: string): Promise<{ title: string; blocks: Block[]
 
 const CATEGORIES = ["event", "recruitment", "training", "community"] as const;
 
-async function listAnnouncements(): Promise<Announcement[]> {
+function listAnnouncements(): Promise<Announcement[]> {
+  return withCache("announcements", loadAnnouncements);
+}
+async function loadAnnouncements(): Promise<Announcement[]> {
   const html = await getHtml("/announcements");
   return cards(html, "announcements").map((c) => {
     const text = clean(c.segment);
@@ -330,7 +344,10 @@ function prettyClock(total: number) {
   return `${h24 % 12 || 12}:${pad(m)} ${h24 >= 12 ? "PM" : "AM"}`;
 }
 
-async function listEvents(): Promise<MstcEvent[]> {
+function listEvents(): Promise<MstcEvent[]> {
+  return withCache("events", loadEvents);
+}
+async function loadEvents(): Promise<MstcEvent[]> {
   const html = await getHtml("/events");
   const pastAt = html.search(/>\s*Past events\s*</i);
   return cards(html, "events").map((c) => {
@@ -386,8 +403,12 @@ async function listEvents(): Promise<MstcEvent[]> {
 }
 
 async function nextEvent(): Promise<MstcEvent | null> {
+  return pickNextEvent(await listEvents());
+}
+
+export function pickNextEvent(events: MstcEvent[]): MstcEvent | null {
   const now = Date.now();
-  const upcoming = (await listEvents()).filter((e) => {
+  const upcoming = events.filter((e) => {
     if (e.past) return false;
     if (e.starts_at) return Date.parse(e.starts_at) + (e.duration_minutes ?? 120) * 60_000 >= now;
     return true;

@@ -8,6 +8,7 @@ import { api, type MstcEvent } from "../../src/api";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { HomeRank } from "../../src/plan/HomeRank";
+import { OfflineNote } from "../../src/OfflineNote";
 
 function useCountdown(targetIso?: string | null, durationMin: number = 120) {
   const [now, setNow] = useState(() => Date.now());
@@ -194,6 +195,7 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
+        <OfflineNote />
         <HomeRank />
 
         {eventQ.isLoading ? (

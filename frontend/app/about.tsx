@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useRouter } from "expo-router";
@@ -6,7 +6,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 import { channel, checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
-import { useInstall } from "../src/installUpdate";
+import { install, restoreInstall, useInstall } from "../src/installUpdate";
 import { previewPromotion } from "../src/game/promotion";
 
 export default function AboutScreen() {
@@ -16,8 +16,14 @@ export default function AboutScreen() {
   const [checking, setChecking] = useState(false);
   const [msg, setMsg] = useState("");
   const [found, setFound] = useState<UpdateInfo | null>(null);
-  const { state, pct, start } = useInstall();
+  const { state, pct, start, pending } = useInstall(found);
   const working = state === "downloading" || state === "installing";
+
+  // a download that is running or finished earlier shows up here too
+  useEffect(() => {
+    restoreInstall().then(() => {});
+  }, []);
+  const shown = found ?? (pending && (state === "downloading" || state === "ready" || state === "installing") ? pending : null);
 
   const check = async () => {
     setChecking(true);
@@ -83,13 +89,13 @@ export default function AboutScreen() {
             )}
           </Pressable>
           {msg ? <Text style={styles.bulletText}>{msg}</Text> : null}
-          {found ? (
+          {shown ? (
             <View style={{ gap: 8 }}>
-              <Text style={styles.bulletText}>Build {found.build} is available.</Text>
-              <Pressable disabled={working} onPress={() => start(found)} style={[styles.updateBtn, working && { opacity: 0.8 }]}>
+              <Text style={styles.bulletText}>Build {shown.build} is available.</Text>
+              <Pressable disabled={working} onPress={() => (state === "ready" ? install() : start(shown))} style={[styles.updateBtn, working && { opacity: 0.8 }]}>
                 <Ionicons name="cloud-download-outline" size={16} color={colors.onBrandPrimary} />
                 <Text style={styles.updateBtnText}>
-                  {state === "installing" ? "Opening installer…" : state === "downloading" ? (pct >= 0 ? `Downloading… ${pct}%` : "Downloading…") : state === "error" ? "Try again" : "Download and install"}
+                  {state === "installing" ? "Opening installer…" : state === "downloading" ? (pct >= 0 ? `Downloading… ${pct}%` : "Downloading…") : state === "ready" ? "Install now" : state === "error" ? "Try again" : "Download and install"}
                 </Text>
               </Pressable>
               {state === "error" ? <Text style={styles.bulletText}>Couldn't download. Check your connection and try again.</Text> : null}

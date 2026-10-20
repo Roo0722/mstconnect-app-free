@@ -1,3 +1,4 @@
+import { OfflineNote } from "../../src/OfflineNote";
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
@@ -33,6 +34,7 @@ export default function NewsScreen() {
         <Text style={styles.title}>Announcements</Text>
         <Text style={styles.subtitle}>Latest from MSTC — newest first</Text>
       </View>
+      <View style={{ paddingHorizontal: spacing.lg }}><OfflineNote /></View>
       {q.isLoading ? (
         <View style={styles.center}><ActivityIndicator color={colors.brandPrimary} /></View>
       ) : (

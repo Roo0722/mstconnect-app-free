@@ -66,9 +66,9 @@ Timers and the warm-up use short beeps, a soft rhythm tick and a small vibration
 
 1. Open the [latest release](https://github.com/Roo0722/mstconnect-app-free/releases/latest) and download **`MSTConnect.apk`** (or use the button at the top of this page).
 2. Open the file on your phone. If Android asks, allow **Install unknown apps** for your browser or file manager.
-3. To update later, install the newer APK over the old one. The app also shows an **"update available"** notice when a newer release exists.
+3. To update later, install the newer APK over the old one. The app also shows an **"update available"** notice when a newer release exists. The update downloads in the background (with a progress notification) and the file stays on the phone until it is installed.
 
-Your saved presets and read notifications stay on your phone when you update.
+Your saved presets and read notifications stay on your phone when you update. Events, announcements and the posts you open are also saved, so you still see the last copy without signal.
 
 ---
 
@@ -178,7 +178,7 @@ Scan the QR code with **Expo Go**, or press `a` for an Android emulator. The ext
 
 ## Roadmap
 
-Ideas being considered, not promises: a match timer with set scoring, a training log, an offline cache for News and Events, and a members area (with proper privacy safeguards) built on the website's admin panel.
+Ideas being considered, not promises: a match timer with set scoring, and a members area (with proper privacy safeguards) built on the website's admin panel.
 
 <details>
 <summary><b>What changed from the original Emergent build</b></summary>
