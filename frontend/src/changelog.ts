@@ -12,6 +12,7 @@ export const CHANGELOG: Change[] = [
       "Pick your warm-up on the Warm-Up Guide screen. Short is about 8 minutes (the essentials), Standard is about 14 (the everyday one), Long is about 17.",
       "Long adds squats, single-leg balance, standing hip abduction and shadow inside and outside kicks (no ball) before ball work.",
       "The app remembers your choice, and your training log notes which length you did.",
+      "Beta only: About has a Preview promotion screen button so you can see the celebration without ranking up. It changes nothing.",
     ],
   },
   {

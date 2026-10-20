@@ -12,9 +12,23 @@ export function promotionDecision(seen: number | null, level: number): "none" | 
   return "none";
 }
 
+// Beta-only "Preview promotion" button (About screen): shows the screen with your current rank, changes nothing.
+const previewListeners = new Set<() => void>();
+export function previewPromotion() {
+  previewListeners.forEach((f) => f());
+}
+
 export function usePromotion() {
   const { game, loaded } = useGame();
   const [pending, setPending] = useState<number | null>(null);
+  const [preview, setPreview] = useState(false);
+  useEffect(() => {
+    const f = () => setPreview(true);
+    previewListeners.add(f);
+    return () => {
+      previewListeners.delete(f);
+    };
+  }, []);
 
   useEffect(() => {
     if (!loaded) return;
@@ -33,9 +47,13 @@ export function usePromotion() {
   }, [loaded, game.level]);
 
   const dismiss = useCallback(() => {
+    if (preview) {
+      setPreview(false);
+      return;
+    }
     if (pending !== null) AsyncStorage.setItem(KEY, String(pending)).catch(() => {});
     setPending(null);
-  }, [pending]);
+  }, [pending, preview]);
 
-  return { game, level: pending, dismiss };
+  return { game, level: preview ? game.level : pending, dismiss };
 }

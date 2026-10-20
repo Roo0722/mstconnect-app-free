@@ -7,6 +7,7 @@ import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
 import { channel, checkForUpdate, installedBuild, installedVersion, type UpdateInfo } from "../src/update";
 import { useInstall } from "../src/installUpdate";
+import { previewPromotion } from "../src/game/promotion";
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets();
@@ -62,6 +63,12 @@ export default function AboutScreen() {
             guide, score counter, and rules reference.
           </Text>
         </View>
+
+        {channel() === "beta" ? (
+          <Pressable testID="preview-promotion" onPress={previewPromotion} style={styles.previewBtn} accessibilityRole="button">
+            <Text style={styles.previewText}>Preview promotion screen (beta only)</Text>
+          </Pressable>
+        ) : null}
 
         <Text style={styles.section}>APP UPDATES</Text>
         <View style={styles.list}>
@@ -128,6 +135,8 @@ function Bullet({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
+  previewBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.pill, minHeight: 44, alignItems: "center", justifyContent: "center", marginBottom: spacing.md },
+  previewText: { color: colors.muted, fontSize: 13, fontWeight: "700" },
   root: { flex: 1, backgroundColor: colors.surface },
   header: {
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
