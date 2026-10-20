@@ -27,67 +27,83 @@ export const HomeRank = memo(function HomeRank() {
       testID="home-rank-card"
     >
       <View style={s.top}>
+        <Text style={s.eyebrow}>PLAYER RANK</Text>
         <Text style={s.eyebrow}>LEVEL {g.level} OF 8</Text>
-        <Text style={s.eyebrow}>{g.seasonSpan.toUpperCase()}</Text>
       </View>
-      <Image source={EMBLEMS[g.level - 1]} style={s.emblem} contentFit="contain" transition={250} />
-      <Text style={s.name}>
-        {g.rankName}
-        {g.division ? ` ${g.division}` : ""}
-      </Text>
-      <Text style={s.role}>{rank.role}</Text>
-      {g.division ? (
-        <>
-          <View style={s.track}>
-            <View style={[s.fill, { width: `${Math.round(frac * 100)}%` }]} />
-          </View>
-          <View style={s.between}>
-            <Text style={s.small}>{g.held ? "Division bar full" : `${g.within} / ${g.divisionSize} RP in this division`}</Text>
-            <Text style={s.small}>{g.rawRP.toLocaleString()} RP</Text>
-          </View>
-        </>
-      ) : (
-        <Text style={s.small}>{g.rawRP.toLocaleString()} RP this season</Text>
-      )}
+
+      <View style={s.hero}>
+        <Image source={EMBLEMS[g.level - 1]} style={s.emblem} contentFit="contain" transition={250} />
+        <View style={s.heroText}>
+          <Text style={s.name} numberOfLines={2}>
+            {g.rankName}
+            {g.division ? ` ${g.division}` : ""}
+          </Text>
+          <Text style={s.role} numberOfLines={2}>{rank.role}</Text>
+          {g.division ? (
+            <>
+              <View style={s.between}>
+                <Text style={s.small}>{g.held ? "Bar full" : `${g.within} / ${g.divisionSize} RP`}</Text>
+                <Text style={s.small}>{g.rawRP.toLocaleString()} RP</Text>
+              </View>
+              <View style={s.track}>
+                <View style={[s.fill, { width: `${Math.round(frac * 100)}%` }]} />
+              </View>
+            </>
+          ) : (
+            <Text style={s.small}>{g.rawRP.toLocaleString()} RP this season</Text>
+          )}
+        </View>
+      </View>
 
       <View style={s.chips}>
         <View style={s.chip}>
-          <Ionicons name="flame" size={14} color={g.week.streakReached ? colors.brandSecondary : colors.muted} />
-          <Text style={s.chipText}>{g.week.streakWeeks > 0 ? `Streak ${g.week.streakWeeks} ${g.week.streakWeeks === 1 ? "week" : "weeks"}` : "No streak yet"}</Text>
+          <Ionicons name="flame" size={16} color={g.week.streakReached ? colors.brandSecondary : colors.muted} />
+          <View>
+            <Text style={s.chipLabel}>STREAK</Text>
+            <Text style={s.chipText}>{g.week.streakWeeks > 0 ? `${g.week.streakWeeks} ${g.week.streakWeeks === 1 ? "week" : "weeks"}` : "None yet"}</Text>
+          </View>
         </View>
         <View style={s.chip}>
-          <Text style={s.chipText}>{g.week.minutes} min this week</Text>
+          <Ionicons name="time-outline" size={16} color={colors.muted} />
+          <View>
+            <Text style={s.chipLabel}>THIS WEEK</Text>
+            <Text style={s.chipText}>{g.week.minutes} min</Text>
+          </View>
         </View>
       </View>
 
       <View style={s.weekBox}>
-        <Text style={s.eyebrow}>THIS WEEK</Text>
-        <WeekStrip week={week} trained={trained} plan={plan} />
+        <Text style={s.weekTitle}>WEEKLY ACTIVITY · VIEW ONLY</Text>
+        <WeekStrip week={week} trained={trained} plan={plan} legend />
       </View>
 
-      <View style={s.footer}>
-        <Text style={s.footerText}>{fresh ? "Set your week and start your first warm-up" : "Open Rank & Plan"}</Text>
-        <Ionicons name="chevron-forward" size={16} color={colors.brandSecondary} />
+      <View style={s.cta}>
+        <Text style={s.ctaText}>{fresh ? "SET YOUR WEEK & START" : "OPEN RANK & PLAN"}</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.onBrandSecondary} />
       </View>
     </Pressable>
   );
 });
 
 const s = StyleSheet.create({
-  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.brandSecondary, gap: 6, marginBottom: spacing.lg },
+  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.brandSecondary, gap: 10, marginBottom: spacing.md },
   top: { flexDirection: "row", justifyContent: "space-between" },
-  eyebrow: { color: colors.brandSecondary, fontSize: 10, fontWeight: "900", letterSpacing: 1.6 },
-  emblem: { width: "100%", height: 130, marginVertical: 2 },
-  name: { color: colors.onSurface, fontSize: 26, fontWeight: "900" },
+  eyebrow: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 1.4 },
+  hero: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  emblem: { width: 104, height: 100 },
+  heroText: { flex: 1, gap: 3 },
+  name: { color: colors.onSurface, fontSize: 22, fontWeight: "900", lineHeight: 26 },
   role: { color: colors.muted, fontSize: 12 },
-  track: { height: 8, borderRadius: 4, backgroundColor: colors.surfaceTertiary, overflow: "hidden", marginTop: 4 },
+  track: { height: 8, borderRadius: 4, backgroundColor: colors.surfaceTertiary, overflow: "hidden" },
   fill: { height: "100%", backgroundColor: colors.brandSecondary },
-  between: { flexDirection: "row", justifyContent: "space-between" },
+  between: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   small: { color: colors.muted, fontSize: 11 },
-  chips: { flexDirection: "row", gap: 8, marginTop: 4, flexWrap: "wrap" },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.surfaceTertiary, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 6 },
-  chipText: { color: colors.onSurface, fontSize: 12, fontWeight: "700" },
-  weekBox: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 10, gap: 8 },
-  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: colors.border, marginTop: 6, paddingTop: 10 },
-  footerText: { color: colors.brandSecondary, fontSize: 12, fontWeight: "800" },
+  chips: { flexDirection: "row", gap: 8 },
+  chip: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 8 },
+  chipLabel: { color: colors.muted, fontSize: 9, fontWeight: "800", letterSpacing: 1 },
+  chipText: { color: colors.onSurface, fontSize: 14, fontWeight: "800" },
+  weekBox: { gap: 8 },
+  weekTitle: { color: colors.muted, fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
+  cta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.brandSecondary, borderRadius: radius.md, minHeight: 46, paddingHorizontal: spacing.md },
+  ctaText: { color: colors.onBrandSecondary, fontSize: 13, fontWeight: "900", letterSpacing: 0.8 },
 });

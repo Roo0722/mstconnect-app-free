@@ -48,6 +48,22 @@ function EventCard({ event, onPress }: { event: MstcEvent | null | undefined; on
   const noEvent = !event;
   const live = countdown.state === "live";
 
+  if (noEvent) {
+    return (
+      <View style={styles.emptyEvent} testID="next-event-card">
+        <Ionicons name="calendar-outline" size={24} color={colors.brandSecondary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.heroEyebrow}>NEXT MSTC EVENT</Text>
+          <Text style={styles.emptyTitle}>No upcoming event yet</Text>
+          <Text style={styles.noEvent}>New community sessions will appear here.</Text>
+        </View>
+        <View style={styles.statusPill}>
+          <Text style={[styles.statusText, { color: colors.muted }]}>NOT SCHEDULED</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <Pressable style={styles.hero} testID="next-event-card" onPress={onPress} disabled={!onPress}>
       <View style={styles.heroTopRow}>
@@ -159,6 +175,10 @@ export default function HomeScreen() {
           <View>
             <Text style={styles.brandTag}>MSTConnect</Text>
             <Text style={styles.brandSub}>Malitbog Sepak Takraw Community</Text>
+            <View style={styles.freeChip} testID="free-badge">
+              <Ionicons name="sparkles" size={11} color={colors.brandSecondary} />
+              <Text style={styles.freeChipText}>ALWAYS FREE · NO JOINING FEE</Text>
+            </View>
           </View>
           <Pressable
             testID="header-notifications-btn"
@@ -172,11 +192,6 @@ export default function HomeScreen() {
               </View>
             )}
           </Pressable>
-        </View>
-
-        <View style={styles.freeChip} testID="free-badge">
-          <Ionicons name="sparkles" size={12} color={colors.onBrandSecondary} />
-          <Text style={styles.freeChipText}>ALWAYS FREE · NO JOINING FEE</Text>
         </View>
 
         <HomeRank />
@@ -210,20 +225,19 @@ export default function HomeScreen() {
             onPress={() => router.push("/news")}
           >
             <View style={styles.annTagRow}>
-              <View style={styles.annTag}>
-                <Text style={styles.annTagText}>{latest.category.toUpperCase()}</Text>
-              </View>
+              <Text style={styles.annCat}>{latest.category.toUpperCase()}</Text>
               {latest.pinned && (
                 <View style={[styles.annTag, { backgroundColor: colors.brandSecondary }]}>
                   <Text style={[styles.annTagText, { color: colors.onBrandSecondary }]}>PINNED</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.annTitle}>{latest.title}</Text>
-            <Text style={styles.annBody} numberOfLines={3}>{latest.body}</Text>
-            <View style={styles.annFooter}>
-              <Text style={styles.annRead}>Read more</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.brandSecondary} />
+            <View style={styles.annRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.annTitle} numberOfLines={2}>{latest.title}</Text>
+                <Text style={styles.annBody} numberOfLines={2}>{latest.body}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
             </View>
           </Pressable>
         ) : (
@@ -233,9 +247,9 @@ export default function HomeScreen() {
         <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
         <View style={styles.quickRow}>
           <QuickTile icon="megaphone-outline" label="All News" onPress={() => router.push("/news")} testID="quick-news" />
-          <QuickTile icon="construct-outline" label="Tools" onPress={() => router.push("/tools")} testID="quick-tools" />
+          <QuickTile icon="construct-outline" label="Training Tools" onPress={() => router.push("/tools")} testID="quick-tools" />
           <QuickTile icon="mail-outline" label="Enquiry" onPress={() => router.push("/enquiry")} testID="quick-enquiry" />
-          <QuickTile icon="globe-outline" label="Website" onPress={() => router.push("/website")} testID="quick-website" />
+          <QuickTile icon="globe-outline" label="MSTC Website" onPress={() => router.push("/website")} testID="quick-website" />
         </View>
       </ScrollView>
     </View>
@@ -246,7 +260,8 @@ function QuickTile({ icon, label, onPress, testID }: { icon: any; label: string;
   return (
     <Pressable testID={testID} style={styles.quickTile} onPress={onPress}>
       <Ionicons name={icon} size={22} color={colors.brandSecondary} />
-      <Text style={styles.quickLabel}>{label}</Text>
+      <Text style={styles.quickLabel} numberOfLines={1}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
     </Pressable>
   );
 }
@@ -256,12 +271,12 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: spacing.md,
   },
   brandTag: {
     color: colors.onSurface,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "900",
     letterSpacing: 1.2,
   },
@@ -282,12 +297,12 @@ const styles = StyleSheet.create({
   freeChip: {
     alignSelf: "flex-start",
     flexDirection: "row", gap: 6, alignItems: "center",
-    paddingHorizontal: spacing.md, paddingVertical: 6,
+    paddingHorizontal: 10, paddingVertical: 4,
     borderRadius: radius.pill,
-    backgroundColor: colors.brandSecondary,
-    marginBottom: spacing.lg,
+    borderWidth: 1, borderColor: colors.brandSecondary,
+    marginTop: 8,
   },
-  freeChipText: { color: colors.onBrandSecondary, fontSize: 11, fontWeight: "800", letterSpacing: 0.6 },
+  freeChipText: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
   loadingHero: {
     height: 220, backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg,
     alignItems: "center", justifyContent: "center",
@@ -299,7 +314,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
   heroEyebrow: { color: colors.brandSecondary, fontSize: 11, fontWeight: "900", letterSpacing: 1.6 },
@@ -323,7 +338,13 @@ const styles = StyleSheet.create({
   colon: { color: colors.brandSecondary, fontSize: 28, fontWeight: "900", paddingBottom: 14 },
   tbdLine: { color: colors.brandSecondary, fontSize: 16, fontWeight: "700", marginBottom: spacing.md },
   liveLine: { color: colors.brandPrimary, fontSize: 20, fontWeight: "900", marginBottom: spacing.md },
-  noEvent: { color: colors.muted, fontSize: 13, marginBottom: spacing.md },
+  noEvent: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  emptyEvent: {
+    flexDirection: "row", alignItems: "center", gap: spacing.md,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  emptyTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800", marginTop: 3 },
   heroMeta: { gap: 6, marginTop: 4 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   metaText: { color: colors.muted, fontSize: 13, flex: 1 },
@@ -334,19 +355,21 @@ const styles = StyleSheet.create({
   annCard: {
     backgroundColor: colors.surfaceTertiary,
     borderRadius: radius.lg,
-    padding: spacing.lg,
+    padding: spacing.md,
     borderWidth: 1, borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
-  annTagRow: { flexDirection: "row", gap: 6, marginBottom: spacing.sm },
+  annTagRow: { flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
+  annCat: { color: colors.finePrint, fontSize: 10, fontWeight: "700", letterSpacing: 1 },
+  annRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   annTag: {
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: radius.sm,
     backgroundColor: colors.brandTertiary,
   },
   annTagText: { color: colors.onBrandTertiary, fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
-  annTitle: { color: colors.onSurface, fontSize: 17, fontWeight: "800", marginBottom: 6 },
-  annBody: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  annTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800", marginBottom: 4 },
+  annBody: { color: colors.muted, fontSize: 13, lineHeight: 18 },
   annFooter: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.sm },
   annRead: { color: colors.brandSecondary, fontSize: 12, fontWeight: "700" },
   muted: { color: colors.muted, fontSize: 13 },
@@ -355,10 +378,11 @@ const styles = StyleSheet.create({
     flexBasis: "48%", flexGrow: 1,
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
+    minHeight: 56,
     borderWidth: 1, borderColor: colors.border,
-    alignItems: "flex-start",
+    flexDirection: "row", alignItems: "center",
     gap: 10,
   },
-  quickLabel: { color: colors.onSurface, fontSize: 14, fontWeight: "700" },
+  quickLabel: { color: colors.onSurface, fontSize: 14, fontWeight: "700", flex: 1 },
 });

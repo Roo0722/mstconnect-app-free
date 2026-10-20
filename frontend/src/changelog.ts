@@ -4,6 +4,17 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-23-home-redesign",
+    date: "23 Oct 2026",
+    title: "Cleaner Home screen",
+    tag: "Beta",
+    items: [
+      "The rank card is more compact: emblem beside your rank, progress bar and RP together, streak and weekly minutes as two small tiles, and a clear Open Rank & Plan button.",
+      "Weekly activity now shows missed training days in grey, so red only means a day you still have planned. A small legend explains the colours.",
+      "Shorter header with an outlined Always Free pill, a one-line card when there is no upcoming event, a tighter announcement preview, and quick actions as a tidy 2 by 2 grid.",
+    ],
+  },
+  {
     id: "2026-10-22-warmup-length",
     date: "22 Oct 2026",
     title: "Warm-up length: Short, Standard or Long",

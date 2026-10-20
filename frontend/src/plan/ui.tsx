@@ -42,10 +42,13 @@ export function usePlanWeek() {
 }
 
 // ---------- week strip (view only; used on Home) ----------
-export function WeekStrip({ week, trained, plan }: { week: DayView[]; trained: Set<number>; plan: Plan }) {
+export function WeekStrip({ week, trained, plan, legend }: { week: DayView[]; trained: Set<number>; plan: Plan; legend?: boolean }) {
+  const todayIdx = week.findIndex((d) => d.isToday);
   return (
+    <View style={{ gap: 8 }}>
     <View style={s.strip}>
       {week.map((d) => {
+        const missed = plan.set && todayIdx >= 0 && d.index < todayIdx && (d.plan.mode === "train" || d.plan.mode === "club") && !trained.has(d.ms) && d.events.length === 0;
         const done = trained.has(d.ms);
         const event = d.events.length > 0;
         const train = d.plan.mode === "train" || d.plan.mode === "club";
@@ -63,6 +66,12 @@ export function WeekStrip({ week, trained, plan }: { week: DayView[]; trained: S
               <Ionicons name="star" size={15} color="#0a0a0c" />
             </View>
           );
+        } else if (missed) {
+          bubble = (
+            <View style={[s.dot, { backgroundColor: "#26262e" }]}>
+              <Text style={[s.dotText, { color: "#8a8a96" }]}>{num}</Text>
+            </View>
+          );
         } else if (train) {
           bubble = (
             <View style={[s.dot, { borderWidth: d.isToday ? 2 : 1, borderColor: "#e0362c", backgroundColor: d.isToday ? "#2a1311" : "transparent" }]}>
@@ -77,12 +86,21 @@ export function WeekStrip({ week, trained, plan }: { week: DayView[]; trained: S
           );
         }
         return (
-          <View key={d.index} style={s.stripCol} accessibilityLabel={`${DAY_NAMES[d.index]}: ${done ? "trained" : event ? "MSTC event" : train ? "training day" : "rest"}`}>
+          <View key={d.index} style={s.stripCol} accessibilityLabel={`${DAY_NAMES[d.index]}: ${done ? "trained" : event ? "MSTC event" : missed ? "missed training day" : train ? "training day" : "rest"}`}>
             <Text style={[s.stripLetter, d.isToday && { color: colors.onSurface, fontWeight: "800" }]}>{DAY_LETTERS[d.index]}</Text>
             {bubble}
           </View>
         );
       })}
+    </View>
+    {legend ? (
+      <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <Text style={[s.legend, { color: GREEN }]}>● done</Text>
+        <Text style={[s.legend, { color: RED }]}>● planned</Text>
+        <Text style={s.legend}>● missed</Text>
+        <Text style={[s.legend, { color: YELLOW }]}>★ MSTC event</Text>
+      </View>
+    ) : null}
     </View>
   );
 }
@@ -338,6 +356,7 @@ export async function shareRankPicture(cardRef: React.RefObject<View | null>, g:
 
 const s = StyleSheet.create({
   strip: { flexDirection: "row", justifyContent: "space-between" },
+  legend: { color: "#8a8a96", fontSize: 10 },
   stripCol: { flex: 1, alignItems: "center", gap: 5 },
   stripLetter: { color: colors.muted, fontSize: 10, fontWeight: "600" },
   dot: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
