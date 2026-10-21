@@ -4,6 +4,13 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-26-cache-cleanup",
+    date: "26 Oct 2026",
+    title: "Frees up storage",
+    tag: "Beta",
+    items: ["Old downloaded update files left by earlier versions are removed automatically, which can free 100 MB or more."],
+  },
+  {
     id: "2026-10-25-tidy-up",
     date: "25 Oct 2026",
     title: "Tidy-up and smaller app",

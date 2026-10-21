@@ -109,10 +109,22 @@ function watch(task: any, info: UpdateInfo) {
     });
 }
 
+// Older versions of the app left their downloaded APK in the cache (about 100 MB each). Remove those.
+async function sweepOldApks() {
+  try {
+    const dir = FileSystem.cacheDirectory;
+    if (!dir) return;
+    for (const f of await FileSystem.readDirectoryAsync(dir)) {
+      if (/^mstconnect-\d+\.apk$/.test(f)) await FileSystem.deleteAsync(dir + f, { idempotent: true });
+    }
+  } catch {}
+}
+
 // Call once at start-up (and again from About): cleans up, then picks an unfinished download back up.
 let restoring: Promise<void> | null = null;
 export function restoreInstall(): Promise<void> {
   restoring ??= (async () => {
+    await sweepOldApks();
     const saved = await readSaved();
     if (saved && installedBuild() >= saved.info.build) {
       // that version is installed now: the file is no longer needed
