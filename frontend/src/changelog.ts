@@ -8,7 +8,10 @@ export const CHANGELOG: Change[] = [
     date: "26 Oct 2026",
     title: "Frees up storage",
     tag: "Beta",
-    items: ["Old downloaded update files left by earlier versions are removed automatically, which can free 100 MB or more."],
+    items: [
+      "Old downloaded update files left by earlier versions are removed automatically, which can free 100 MB or more.",
+      "The app file is smaller (the unused emulator parts were left out), so updates download faster.",
+    ],
   },
   {
     id: "2026-10-25-tidy-up",
