@@ -4,6 +4,16 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-25-tidy-up",
+    date: "25 Oct 2026",
+    title: "Tidy-up and smaller app",
+    tag: "Beta",
+    items: [
+      "Removed unused parts, so the app and its updates are a little smaller.",
+      "Cleaner builds behind the scenes: fixed versions and correct release labels.",
+    ],
+  },
+  {
     id: "2026-10-24-offline-download",
     date: "24 Oct 2026",
     title: "Offline copy and background update download",

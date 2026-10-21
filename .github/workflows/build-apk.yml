@@ -118,6 +118,7 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          target_commitish: ${{ github.sha }}
           tag_name: apk-${{ github.run_number }}
           name: MSTConnect APK #${{ github.run_number }}
           body: ${{ github.event.head_commit.message }}

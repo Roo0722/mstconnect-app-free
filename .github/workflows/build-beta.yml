@@ -47,7 +47,7 @@ jobs:
           npm pkg delete scripts.preinstall   # Emergent sandbox guard, not needed in CI
           npm install --legacy-peer-deps
           # sound + screen-awake packages, in the versions that match this Expo SDK
-          npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar expo-screen-orientation expo-calendar expo-file-system expo-intent-launcher expo-sharing react-native-view-shot @kesha-antonov/react-native-background-downloader -- --legacy-peer-deps
+          npx expo install expo-audio expo-keep-awake expo-notifications expo-navigation-bar expo-screen-orientation expo-calendar expo-file-system expo-intent-launcher expo-sharing react-native-view-shot @kesha-antonov/react-native-background-downloader@4.6.3 -- --legacy-peer-deps
 
       - name: Turn on push notifications (only if the beta Firebase secret is set)
         if: ${{ env.GOOGLE_SERVICES_JSON != '' }}
@@ -134,6 +134,7 @@ jobs:
       - name: Publish GitHub pre-release
         uses: softprops/action-gh-release@v2
         with:
+          target_commitish: ${{ github.sha }}
           tag_name: beta-${{ github.run_number }}
           name: MSTConnect BETA #${{ github.run_number }}
           prerelease: true

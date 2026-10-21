@@ -1,7 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { LogBox } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
@@ -12,10 +11,6 @@ import { usePushSetup } from "@/src/push";
 import { UpdatePrompt } from "@/src/UpdatePrompt";
 import { useReminderSync } from "@/src/plan/useReminderSync";
 import { PromotionModal } from "@/src/plan/PromotionModal";
-
-// Disable logbox errors etc so that users can see the app
-// and agent works as expected.
-LogBox.ignoreAllLogs(true)
 
 export default function RootLayout() {
   useReminderSync(); // keeps training and event reminders in step with the weekly plan
