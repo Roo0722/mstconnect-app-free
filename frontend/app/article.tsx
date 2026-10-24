@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { api, type Block } from "../src/api";
+import { addToCalendar } from "../src/addToCalendar";
 import { RichText } from "../src/RichText";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
@@ -31,23 +32,16 @@ export default function ArticleScreen() {
       await Share.share({ message: lines.join("\n") });
     } catch {}
   };
-  const addToCalendar = async () => {
+  const addToCal = async () => {
     if (!ev?.starts_at) return;
-    try {
-      const Cal = require("expo-calendar");
-      const start = new Date(ev.starts_at);
-      const end = new Date(start.getTime() + (ev.duration_minutes ?? 120) * 60_000);
-      await Cal.createEventInCalendarAsync({
-        title: ev.title || shownTitle0,
-        startDate: start,
-        endDate: end,
-        location: ev.location ?? undefined,
-        notes: `${String(url)}`,
-        alarms: [{ relativeOffset: -60 }],
-      });
-    } catch {
-      Alert.alert("Couldn't open the calendar", "Please check that a calendar app is installed on your phone.");
-    }
+    const ok = await addToCalendar({
+      title: ev.title || shownTitle0,
+      startsAt: ev.starts_at,
+      durationMin: ev.duration_minutes,
+      location: ev.location,
+      notes: String(url),
+    });
+    if (!ok) Alert.alert("Couldn't add to calendar", "No calendar app could open it. You can share the event details instead.");
   };
 
   const blocks: Block[] = q.data?.blocks ?? [];
@@ -63,7 +57,7 @@ export default function ArticleScreen() {
         </Pressable>
         <Text style={[styles.headerTitle, { flex: 1 }]}>{category ? String(category).toUpperCase() : "ANNOUNCEMENT"}</Text>
         {ev?.starts_at && !ev.past && !ev.cancelled ? (
-          <Pressable testID="calendar-btn" onPress={addToCalendar} style={styles.backBtn} accessibilityLabel="Add to calendar">
+          <Pressable testID="calendar-btn" onPress={addToCal} style={styles.backBtn} accessibilityLabel="Add to calendar">
             <Ionicons name="calendar-outline" size={20} color={colors.onSurface} />
           </Pressable>
         ) : null}

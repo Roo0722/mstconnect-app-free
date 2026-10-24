@@ -4,6 +4,18 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-28-home-dashboard",
+    date: "28 Oct 2026",
+    title: "Home is now a fixed dashboard",
+    tag: "Beta",
+    items: [
+      "Home no longer scrolls. It measures your screen and tightens up on smaller phones or larger text so nothing is hidden behind the bottom bar.",
+      "Tap the round rank medal to open your rank and plan. The weekly activity strip and a live event countdown sit right under it.",
+      "The four big shortcut tiles are gone; only Enquiry stays. News and Tools are one tap away in the bottom bar.",
+      "Add to calendar now works with many more calendar apps (Google, Samsung, Outlook and others), and falls back to sharing the event.",
+    ],
+  },
+  {
     id: "2026-10-27-cancelled-events",
     date: "27 Oct 2026",
     title: "Cancelled events",

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -7,7 +7,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { api, pickCancelledNotice, type MstcEvent } from "../../src/api";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
-import { HomeRank } from "../../src/plan/HomeRank";
+import { HomeRank, HomeWeek } from "../../src/plan/HomeRank";
 import { OfflineNote } from "../../src/OfflineNote";
 
 function useCountdown(targetIso?: string | null, durationMin: number = 120) {
@@ -39,155 +39,105 @@ function useCountdown(targetIso?: string | null, durationMin: number = 120) {
   }, [targetIso, now, durationMin]);
 }
 
-function EventCard({ event, onPress }: { event: MstcEvent | null | undefined; onPress?: () => void }) {
+function EventCard({ event, compact, onPress }: { event: MstcEvent | null | undefined; compact: boolean; onPress?: () => void }) {
   const countdown = useCountdown(event?.starts_at, event?.duration_minutes ?? 120);
-  const title = event?.title ?? "No upcoming event yet";
-  const location = event?.location ?? "TBD";
-  const date = event?.date ?? "TBD";
-  const time = event?.time ?? "TBD";
 
-  const noEvent = !event;
-  const live = countdown.state === "live";
-
-  if (noEvent) {
+  if (!event) {
     return (
-      <View style={styles.emptyEvent} testID="next-event-card">
-        <Ionicons name="calendar-outline" size={24} color={colors.brandSecondary} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heroEyebrow}>NEXT MSTC EVENT</Text>
-          <Text style={styles.emptyTitle}>No upcoming event yet</Text>
-          <Text style={styles.noEvent}>New community sessions will appear here.</Text>
+      <View style={styles.card} testID="next-event-card">
+        <View style={styles.rowTop}>
+          <Ionicons name="calendar-outline" size={18} color={colors.brandSecondary} />
+          <Text style={styles.eyebrow}>NEXT MSTC EVENT</Text>
+          <View style={[styles.pill, { backgroundColor: colors.surfaceTertiary }]}>
+            <Text style={[styles.pillText, { color: colors.muted }]}>NOT SCHEDULED</Text>
+          </View>
         </View>
-        <View style={styles.statusPill}>
-          <Text style={[styles.statusText, { color: colors.muted }]}>NOT SCHEDULED</Text>
-        </View>
+        <Text style={styles.eventTitle}>No upcoming event yet</Text>
+        <Text style={styles.meta}>New community sessions will appear here. Date: TBD</Text>
       </View>
     );
   }
 
+  const live = countdown.state === "live";
+  const meta = [event.date, event.time, compact ? null : event.location].filter(Boolean).join("  ·  ");
+
   return (
-    <Pressable style={styles.hero} testID="next-event-card" onPress={onPress} disabled={!onPress}>
-      <View style={styles.heroTopRow}>
-        <Text style={styles.heroEyebrow}>NEXT MSTC EVENT</Text>
-        <View
-          style={[
-            styles.statusPill,
-            live && { backgroundColor: colors.brandPrimary },
-            noEvent && { backgroundColor: colors.surfaceTertiary },
-          ]}
-        >
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: live ? colors.onBrandPrimary : noEvent ? colors.muted : colors.brandSecondary },
-            ]}
-          />
-          <Text
-            style={[
-              styles.statusText,
-              live && { color: colors.onBrandPrimary },
-              noEvent && { color: colors.muted },
-            ]}
-          >
-            {live ? "LIVE" : noEvent ? "NONE" : "UPCOMING"}
-          </Text>
+    <Pressable style={styles.card} testID="next-event-card" onPress={onPress} disabled={!onPress}>
+      <View style={styles.rowTop}>
+        <Ionicons name="calendar-outline" size={18} color={colors.brandSecondary} />
+        <Text style={styles.eyebrow}>NEXT MSTC EVENT</Text>
+        <View style={[styles.pill, live && { backgroundColor: colors.brandPrimary }]}>
+          <Text style={[styles.pillText, live && { color: colors.onBrandPrimary }]}>{live ? "LIVE" : "UPCOMING"}</Text>
         </View>
       </View>
-
-      <Text style={styles.heroTitle} numberOfLines={2}>
-        {title}
-      </Text>
-
-      {noEvent ? (
-        <Text style={styles.noEvent}>Check back soon — new sessions post here.</Text>
-      ) : countdown.state === "tbd" ? (
-        <Text style={styles.tbdLine}>Date & time to be announced</Text>
-      ) : live ? (
-        <Text style={styles.liveLine}>Event in Progress</Text>
-      ) : countdown.state === "counting" ? (
+      <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
+      {countdown.state === "counting" ? (
         <View style={styles.timerRow}>
-          <TimeBlock label="DAYS" value={countdown.days} />
-          <Text style={styles.colon}>:</Text>
-          <TimeBlock label="HRS" value={countdown.hours} />
-          <Text style={styles.colon}>:</Text>
-          <TimeBlock label="MIN" value={countdown.mins} />
-          <Text style={styles.colon}>:</Text>
-          <TimeBlock label="SEC" value={countdown.secs} />
+          <TimeBlock label="DAYS" value={countdown.days} compact={compact} />
+          <TimeBlock label="HRS" value={countdown.hours} compact={compact} />
+          <TimeBlock label="MIN" value={countdown.mins} compact={compact} />
+          <TimeBlock label="SEC" value={countdown.secs} compact={compact} />
         </View>
+      ) : live ? (
+        <Text style={styles.liveLine}>Event in progress</Text>
+      ) : countdown.state === "tbd" ? (
+        <Text style={styles.tbdLine}>Date and time to be announced</Text>
       ) : null}
-
-      <View style={styles.heroMeta}>
-        <MetaRow icon="calendar-outline" text={date} />
-        <MetaRow icon="time-outline" text={time} />
-        <MetaRow icon="location-outline" text={location} />
-      </View>
+      {meta ? <Text style={styles.meta} numberOfLines={1}>{meta}</Text> : null}
     </Pressable>
   );
 }
 
-function TimeBlock({ label, value }: { label: string; value: number }) {
+function TimeBlock({ label, value, compact }: { label: string; value: number; compact: boolean }) {
   return (
     <View style={styles.timeBlock}>
-      <Text style={styles.timeValue}>{String(value).padStart(2, "0")}</Text>
+      <Text style={[styles.timeValue, compact && { fontSize: 22 }]}>{String(value).padStart(2, "0")}</Text>
       <Text style={styles.timeLabel}>{label}</Text>
     </View>
   );
 }
 
-function MetaRow({ icon, text }: { icon: any; text: string }) {
-  return (
-    <View style={styles.metaRow}>
-      <Ionicons name={icon} size={14} color={colors.muted} />
-      <Text style={styles.metaText} numberOfLines={1}>{text}</Text>
-    </View>
-  );
-}
-
+// Home is a fixed dashboard: it never scrolls. It measures the space it really has and tightens up
+// (smaller medal, fewer details) before anything could be pushed off screen.
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { fontScale } = useWindowDimensions();
+  const [room, setRoom] = useState(0); // height available for the dashboard, in dp
   const eventQ = useQuery({ queryKey: ["next-event"], queryFn: api.nextEvent });
   const annQ = useQuery({ queryKey: ["announcements"], queryFn: api.listAnnouncements });
   const allEventsQ = useQuery({ queryKey: ["events"], queryFn: api.listEvents });
-  const cancelled = useMemo(() => pickCancelledNotice(allEventsQ.data ?? []), [allEventsQ.data]);
   const notifQ = useQuery({ queryKey: ["notifications"], queryFn: api.listNotifications });
+  const cancelled = useMemo(() => pickCancelledNotice(allEventsQ.data ?? []), [allEventsQ.data]);
 
-  const refreshing = eventQ.isRefetching || annQ.isRefetching || notifQ.isRefetching;
-  const onRefresh = () => {
-    eventQ.refetch();
-    annQ.refetch();
-    notifQ.refetch();
-  };
+  // no pull-to-refresh on a fixed screen: refresh quietly when you come back to Home
+  useFocusEffect(
+    useCallback(() => {
+      for (const q of [eventQ, annQ, allEventsQ, notifQ]) if (Date.now() - q.dataUpdatedAt > 60_000) q.refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const latest = annQ.data?.[0];
   const unreadCount = (notifQ.data ?? []).filter((n) => !n.read).length;
+  const big = fontScale > 1.15;
+  const compact = (room > 0 && room < 640) || big;
+  const tight = (room > 0 && room < 560) || fontScale > 1.4;
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onLayout={(e) => setRoom(e.nativeEvent.layout.height - insets.top)}>
       <BackgroundGlow />
-      <ScrollView
-        contentContainerStyle={{
-          paddingTop: insets.top + spacing.md,
-          paddingBottom: spacing.xxl,
-          paddingHorizontal: spacing.lg,
-        }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
-      >
+      <View style={[styles.body, { paddingTop: insets.top + spacing.sm, gap: compact ? 6 : spacing.sm }]}>
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.brandTag}>MSTConnect</Text>
-            <Text style={styles.brandSub}>Malitbog Sepak Takraw Community</Text>
+            <Text style={styles.brandSub} numberOfLines={1}>Malitbog Sepak Takraw Community</Text>
             <View style={styles.freeChip} testID="free-badge">
               <Ionicons name="sparkles" size={11} color={colors.brandSecondary} />
               <Text style={styles.freeChipText}>ALWAYS FREE · NO JOINING FEE</Text>
             </View>
           </View>
-          <Pressable
-            testID="header-notifications-btn"
-            onPress={() => router.push("/notifications")}
-            style={styles.bellBtn}
-          >
+          <Pressable testID="header-notifications-btn" onPress={() => router.push("/notifications")} style={styles.bellBtn} accessibilityLabel="Notifications">
             <Ionicons name="notifications-outline" size={22} color={colors.onSurface} />
             {unreadCount > 0 && (
               <View style={styles.bellBadge}>
@@ -198,28 +148,10 @@ export default function HomeScreen() {
         </View>
 
         <OfflineNote />
-        <HomeRank />
+        <HomeRank compact={compact} />
+        <HomeWeek compact={compact} />
 
-        {eventQ.isLoading ? (
-          <View style={styles.loadingHero}>
-            <ActivityIndicator color={colors.brandPrimary} />
-          </View>
-        ) : (
-          <EventCard
-            event={eventQ.data ?? null}
-            onPress={
-              eventQ.data?.url
-                ? () =>
-                    router.push({
-                      pathname: "/article",
-                      params: { url: eventQ.data!.url!, title: eventQ.data!.title, date: eventQ.data!.date ?? "", category: "event" },
-                    })
-                : undefined
-            }
-          />
-        )}
-
-        {cancelled.map((e) => (
+        {cancelled.slice(0, 1).map((e) => (
           <Pressable
             key={e.id}
             style={styles.cancelNote}
@@ -228,191 +160,113 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Cancelled event: ${e.title}${e.date ? `, ${e.date}` : ""}${e.cancel_reason ? `. ${e.cancel_reason}` : ""}`}
           >
-            <Ionicons name="close-circle" size={18} color={colors.brandPrimary} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.cancelLabel}>CANCELLED{e.date ? ` · ${e.date}` : ""}</Text>
-              <Text style={styles.cancelTitle} numberOfLines={1}>{e.title}</Text>
-              {e.cancel_reason ? <Text style={styles.cancelReason} numberOfLines={2}>{e.cancel_reason}</Text> : null}
-            </View>
+            <Ionicons name="close-circle" size={16} color={colors.brandPrimary} />
+            <Text style={styles.cancelText} numberOfLines={1}>
+              <Text style={styles.cancelLabel}>CANCELLED  </Text>
+              <Text style={{ textDecorationLine: "line-through" }}>{e.title}</Text>
+              {e.cancel_reason ? `  ·  ${e.cancel_reason}` : ""}
+            </Text>
           </Pressable>
         ))}
 
-        <Text style={styles.sectionLabel}>LATEST ANNOUNCEMENT</Text>
-        {annQ.isLoading ? (
-          <ActivityIndicator color={colors.brandPrimary} />
-        ) : latest ? (
-          <Pressable
-            testID="latest-announcement-card"
-            style={styles.annCard}
-            onPress={() => router.push("/news")}
-          >
-            <View style={styles.annTagRow}>
-              <Text style={styles.annCat}>{latest.category.toUpperCase()}</Text>
-              {latest.pinned && (
-                <View style={[styles.annTag, { backgroundColor: colors.brandSecondary }]}>
-                  <Text style={[styles.annTagText, { color: colors.onBrandSecondary }]}>PINNED</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.annRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.annTitle} numberOfLines={2}>{latest.title}</Text>
-                <Text style={styles.annBody} numberOfLines={2}>{latest.body}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-            </View>
-          </Pressable>
+        {eventQ.isLoading ? (
+          <View style={[styles.card, { alignItems: "center", justifyContent: "center", minHeight: 96 }]}>
+            <ActivityIndicator color={colors.brandPrimary} />
+          </View>
         ) : (
-          <Text style={styles.muted}>No announcements yet.</Text>
+          <EventCard
+            event={eventQ.data ?? null}
+            compact={compact}
+            onPress={
+              eventQ.data?.url
+                ? () => router.push({ pathname: "/article", params: { url: eventQ.data!.url!, title: eventQ.data!.title, date: eventQ.data!.date ?? "", category: "event" } })
+                : undefined
+            }
+          />
         )}
 
-        <Text style={styles.sectionLabel}>QUICK ACTIONS</Text>
-        <View style={styles.quickRow}>
-          <QuickTile icon="megaphone-outline" label="All News" onPress={() => router.push("/news")} testID="quick-news" />
-          <QuickTile icon="construct-outline" label="Training Tools" onPress={() => router.push("/tools")} testID="quick-tools" />
-          <QuickTile icon="mail-outline" label="Enquiry" onPress={() => router.push("/enquiry")} testID="quick-enquiry" />
-          <QuickTile icon="globe-outline" label="MSTC Website" onPress={() => router.push("/website")} testID="quick-website" />
+        <View style={styles.annSlot}>
+          {annQ.isLoading ? (
+            <ActivityIndicator color={colors.brandPrimary} />
+          ) : latest ? (
+            <Pressable testID="latest-announcement-card" style={styles.card} onPress={() => router.push("/news")}>
+              <View style={styles.rowTop}>
+                <Ionicons name="megaphone-outline" size={18} color={colors.brandSecondary} />
+                <Text style={styles.eyebrow}>LATEST ANNOUNCEMENT</Text>
+                {latest.pinned ? (
+                  <View style={[styles.pill, { backgroundColor: colors.brandSecondary }]}>
+                    <Text style={[styles.pillText, { color: colors.onBrandSecondary }]}>PINNED</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.annTitle} numberOfLines={tight ? 1 : 2}>{latest.title}</Text>
+              {!tight ? <Text style={styles.annBody} numberOfLines={compact ? 1 : 2}>{latest.body}</Text> : null}
+            </Pressable>
+          ) : (
+            <Text style={styles.muted}>No announcements yet.</Text>
+          )}
         </View>
-      </ScrollView>
-    </View>
-  );
-}
 
-function QuickTile({ icon, label, onPress, testID }: { icon: any; label: string; onPress: () => void; testID: string }) {
-  return (
-    <Pressable testID={testID} style={styles.quickTile} onPress={onPress}>
-      <Ionicons name={icon} size={22} color={colors.brandSecondary} />
-      <Text style={styles.quickLabel} numberOfLines={1}>{label}</Text>
-      <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-    </Pressable>
+        <Pressable testID="quick-enquiry" style={styles.enquiry} onPress={() => router.push("/enquiry")} accessibilityRole="button">
+          <Ionicons name="mail-outline" size={22} color={colors.brandSecondary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.enquiryTitle}>Enquiry</Text>
+            {!tight ? <Text style={styles.meta} numberOfLines={1}>Contact the MSTC community</Text> : null}
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.brandSecondary} />
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: spacing.md,
-  },
-  brandTag: {
-    color: colors.onSurface,
-    fontSize: 22,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  brandSub: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  bellBtn: {
-    width: 44, height: 44, borderRadius: radius.pill,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: colors.border,
-  },
-  bellBadge: {
-    position: "absolute", top: 6, right: 6,
-    minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
-    backgroundColor: colors.brandPrimary,
-    alignItems: "center", justifyContent: "center",
-  },
-  bellBadgeText: { color: colors.onBrandPrimary, fontSize: 10, fontWeight: "700" },
+  body: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, overflow: "hidden" },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  brandTag: { color: colors.onSurface, fontSize: 22, fontWeight: "900", letterSpacing: 1 },
+  brandSub: { color: colors.muted, fontSize: 12, marginTop: 1 },
   freeChip: {
-    alignSelf: "flex-start",
-    flexDirection: "row", gap: 6, alignItems: "center",
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1, borderColor: colors.brandSecondary,
-    marginTop: 8,
+    alignSelf: "flex-start", flexDirection: "row", gap: 6, alignItems: "center",
+    paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill,
+    borderWidth: 1, borderColor: colors.brandSecondary, marginTop: 6,
   },
   freeChipText: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
-  loadingHero: {
-    height: 220, backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: colors.border,
+  bellBtn: {
+    width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.surfaceSecondary,
+    alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border,
   },
-  hero: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.md,
+  bellBadge: {
+    position: "absolute", top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,
+    backgroundColor: colors.brandPrimary, alignItems: "center", justifyContent: "center",
   },
-  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
-  heroEyebrow: { color: colors.brandSecondary, fontSize: 11, fontWeight: "900", letterSpacing: 1.6 },
-  statusPill: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceTertiary,
-  },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { color: colors.onSurface, fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
-  heroTitle: {
-    color: colors.onSurface,
-    fontSize: 24, fontWeight: "900",
-    letterSpacing: 0.3, marginBottom: spacing.md,
-  },
-  timerRow: { flexDirection: "row", alignItems: "flex-end", gap: 4, marginBottom: spacing.md },
-  timeBlock: { alignItems: "center", flex: 1 },
-  timeValue: { color: colors.onSurface, fontSize: 36, fontWeight: "900", letterSpacing: 1 },
-  timeLabel: { color: colors.muted, fontSize: 10, fontWeight: "700", letterSpacing: 1.2, marginTop: -2 },
-  colon: { color: colors.brandSecondary, fontSize: 28, fontWeight: "900", paddingBottom: 14 },
-  tbdLine: { color: colors.brandSecondary, fontSize: 16, fontWeight: "700", marginBottom: spacing.md },
-  liveLine: { color: colors.brandPrimary, fontSize: 20, fontWeight: "900", marginBottom: spacing.md },
-  noEvent: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  emptyEvent: {
-    flexDirection: "row", alignItems: "center", gap: spacing.md,
-    backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
-  },
+  bellBadgeText: { color: colors.onBrandPrimary, fontSize: 10, fontWeight: "700" },
+  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  rowTop: { flexDirection: "row", alignItems: "center", gap: 6 },
+  eyebrow: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 1.3, flex: 1 },
+  pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceTertiary },
+  pillText: { color: colors.onSurface, fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
+  eventTitle: { color: colors.onSurface, fontSize: 18, fontWeight: "900" },
+  timerRow: { flexDirection: "row", gap: 6, marginTop: 2 },
+  timeBlock: { flex: 1, alignItems: "center", backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingVertical: 4 },
+  timeValue: { color: colors.onSurface, fontSize: 28, fontWeight: "900", letterSpacing: 1 },
+  timeLabel: { color: colors.muted, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
+  tbdLine: { color: colors.brandSecondary, fontSize: 14, fontWeight: "700" },
+  liveLine: { color: colors.brandPrimary, fontSize: 18, fontWeight: "900" },
+  meta: { color: colors.muted, fontSize: 12 },
   cancelNote: {
-    flexDirection: "row", alignItems: "flex-start", gap: spacing.sm,
-    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.brandPrimary, marginBottom: spacing.md,
+    flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 8, borderWidth: 1, borderColor: colors.brandPrimary,
   },
-  cancelLabel: { color: colors.brandPrimary, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
-  cancelTitle: { color: colors.onSurface, fontSize: 14, fontWeight: "800", textDecorationLine: "line-through", marginTop: 2 },
-  cancelReason: { color: colors.muted, fontSize: 12, marginTop: 2 },
-  emptyTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800", marginTop: 3 },
-  heroMeta: { gap: 6, marginTop: 4 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  metaText: { color: colors.muted, fontSize: 13, flex: 1 },
-  sectionLabel: {
-    color: colors.finePrint, fontSize: 11, fontWeight: "800", letterSpacing: 1.4,
-    marginBottom: spacing.sm, marginTop: spacing.sm,
-  },
-  annCard: {
-    backgroundColor: colors.surfaceTertiary,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 1, borderColor: colors.border,
-    marginBottom: spacing.md,
-  },
-  annTagRow: { flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  annCat: { color: colors.finePrint, fontSize: 10, fontWeight: "700", letterSpacing: 1 },
-  annRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  annTag: {
-    paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: radius.sm,
-    backgroundColor: colors.brandTertiary,
-  },
-  annTagText: { color: colors.onBrandTertiary, fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
-  annTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800", marginBottom: 4 },
+  cancelText: { flex: 1, color: colors.muted, fontSize: 12 },
+  cancelLabel: { color: colors.brandPrimary, fontSize: 10, fontWeight: "900", letterSpacing: 1.1 },
+  annSlot: { flexShrink: 1, minHeight: 0, justifyContent: "center", overflow: "hidden" },
+  annTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800" },
   annBody: { color: colors.muted, fontSize: 13, lineHeight: 18 },
-  annFooter: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.sm },
-  annRead: { color: colors.brandSecondary, fontSize: 12, fontWeight: "700" },
   muted: { color: colors.muted, fontSize: 13 },
-  quickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  quickTile: {
-    flexBasis: "48%", flexGrow: 1,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    minHeight: 56,
-    borderWidth: 1, borderColor: colors.border,
-    flexDirection: "row", alignItems: "center",
-    gap: 10,
+  enquiry: {
+    flexDirection: "row", alignItems: "center", gap: spacing.md, backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.lg, paddingHorizontal: spacing.md, minHeight: 52, borderWidth: 1, borderColor: colors.border,
   },
-  quickLabel: { color: colors.onSurface, fontSize: 14, fontWeight: "700", flex: 1 },
+  enquiryTitle: { color: colors.onSurface, fontSize: 15, fontWeight: "800" },
 });
