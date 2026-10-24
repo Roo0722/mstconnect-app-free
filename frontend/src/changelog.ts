@@ -7,7 +7,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-28-home-dashboard",
     date: "28 Oct 2026",
     title: "Home is now a fixed dashboard",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Home no longer scrolls. It measures your screen and tightens up on smaller phones or larger text so nothing is hidden behind the bottom bar.",
       "Tap the rank emblem to open your rank and plan. The weekly activity strip and a live event countdown sit right under it.",
@@ -19,7 +19,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-27-cancelled-events",
     date: "27 Oct 2026",
     title: "Cancelled events",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Cancelled events are marked Cancelled in the app, with the reason, until the day they were due to start, just like on the website.",
       "Home shows a red notice for a cancelled event. A cancelled event is never shown as the next event or counted down.",
@@ -30,7 +30,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-26-cache-cleanup",
     date: "26 Oct 2026",
     title: "Frees up storage",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Old downloaded update files left by earlier versions are removed automatically, which can free 100 MB or more.",
       "The app file is smaller (the unused emulator parts were left out), so updates download faster.",
@@ -40,7 +40,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-25-tidy-up",
     date: "25 Oct 2026",
     title: "Tidy-up and smaller app",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Removed unused parts, so the app and its updates are a little smaller.",
       "Cleaner builds behind the scenes: fixed versions and correct release labels.",
@@ -50,7 +50,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-24-offline-download",
     date: "24 Oct 2026",
     title: "Offline copy and background update download",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Events, announcements and the posts you open are now saved on your phone. With no signal you still see the last copy, with a small Offline note you can tap to retry.",
       "Updates now download in the background with a progress notification, so you can leave the app or lock the screen while it downloads.",
@@ -61,7 +61,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-23-home-redesign",
     date: "23 Oct 2026",
     title: "Cleaner Home screen",
-    tag: "Beta",
+    tag: "New",
     items: [
       "The rank card is more compact: emblem beside your rank, progress bar and RP together, streak and weekly minutes as two small tiles, and a clear Open Rank & Plan button.",
       "Weekly activity now shows missed training days in grey, so red only means a day you still have planned. A small legend explains the colours.",
@@ -72,7 +72,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-22-warmup-length",
     date: "22 Oct 2026",
     title: "Warm-up length: Short, Standard or Long",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Pick your warm-up on the Warm-Up Guide screen. Short is about 8 minutes (the essentials), Standard is about 14 (the everyday one), Long is about 17.",
       "Long adds squats, single-leg balance, standing hip abduction and shadow inside and outside kicks (no ball) before ball work.",
@@ -84,7 +84,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-21-promotion",
     date: "21 Oct 2026",
     title: "Promotion screen and a shorter warm-up",
-    tag: "Beta",
+    tag: "New",
     items: [
       "When you move up a rank, a full-screen celebration shows your new emblem, with a button to share it. It waits until you leave the timer screens.",
       "The Warm-Up Guide is about a minute shorter, around 14 minutes with the Get ready counts. Rep counts match the new times.",
@@ -94,7 +94,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-20-rank-plan",
     date: "20 Oct 2026",
     title: "Rank on Home, weekly plan and reminders",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Your rank, progress and this week now show on the Home tab. Tap the card to open Rank & Plan.",
       "New weekly plan: choose your Train, Rest and Club days and the session for each, then get a training reminder at your time.",
@@ -107,7 +107,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-19-timer-polish",
     date: "19 Oct 2026",
     title: "HIIT timer polish, rank sharing and emblems",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Each of the eight ranks now has its own emblem, on your rank card and in the rank ladder.",
       "New 30-minute and 60-minute HIIT presets.",
@@ -121,7 +121,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-18-in-app-update",
     date: "18 Oct 2026",
     title: "Update inside the app",
-    tag: "Beta",
+    tag: "New",
     items: [
       "Updates now download inside the app with a progress percentage. No browser needed.",
       "Android shows its own install screen to confirm. The first time, allow installs from MSTConnect.",
@@ -132,7 +132,7 @@ export const CHANGELOG: Change[] = [
     id: "2026-10-18-training-log",
     date: "18 Oct 2026",
     title: "Training log and ranks",
-    tag: "Beta",
+    tag: "New",
     items: [
       "New Training Log & Rank screen: every minute you train with the Warm-Up, HIIT timer or Flexibility tools is saved on your phone.",
       "Earn rank points (1 per minute, up to 90 per session) and climb eight ranks, from Novice Touch to Sovereign of Takraw.",
