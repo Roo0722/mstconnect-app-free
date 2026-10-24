@@ -127,7 +127,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.root} onLayout={(e) => setRoom(e.nativeEvent.layout.height - insets.top)}>
       <BackgroundGlow />
-      <View style={[styles.body, { paddingTop: insets.top + spacing.sm, gap: compact ? 6 : spacing.sm }]}>
+      <View style={[styles.body, { paddingTop: insets.top + spacing.md, gap: compact ? 8 : 12 }]}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.brandTag}>MSTConnect</Text>
@@ -222,14 +222,14 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
-  body: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, overflow: "hidden" },
+  body: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: spacing.md, overflow: "hidden" },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   brandTag: { color: colors.onSurface, fontSize: 22, fontWeight: "900", letterSpacing: 1 },
   brandSub: { color: colors.muted, fontSize: 12, marginTop: 1 },
   freeChip: {
     alignSelf: "flex-start", flexDirection: "row", gap: 6, alignItems: "center",
     paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill,
-    borderWidth: 1, borderColor: colors.brandSecondary, marginTop: 6,
+    borderWidth: 1, borderColor: colors.brandSecondary, marginTop: 8,
   },
   freeChipText: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
   bellBtn: {
@@ -241,14 +241,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brandPrimary, alignItems: "center", justifyContent: "center",
   },
   bellBadgeText: { color: colors.onBrandPrimary, fontSize: 10, fontWeight: "700" },
-  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 4 },
+  card: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, gap: 6 },
   rowTop: { flexDirection: "row", alignItems: "center", gap: 6 },
   eyebrow: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 1.3, flex: 1 },
   pill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceTertiary },
   pillText: { color: colors.onSurface, fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
   eventTitle: { color: colors.onSurface, fontSize: 18, fontWeight: "900" },
-  timerRow: { flexDirection: "row", gap: 6, marginTop: 2 },
-  timeBlock: { flex: 1, alignItems: "center", backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingVertical: 4 },
+  timerRow: { flexDirection: "row", gap: 8, marginTop: 2 },
+  timeBlock: { flex: 1, alignItems: "center", backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingVertical: 5 },
   timeValue: { color: colors.onSurface, fontSize: 28, fontWeight: "900", letterSpacing: 1 },
   timeLabel: { color: colors.muted, fontSize: 9, fontWeight: "700", letterSpacing: 1 },
   tbdLine: { color: colors.brandSecondary, fontSize: 14, fontWeight: "700" },

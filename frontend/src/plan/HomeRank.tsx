@@ -9,14 +9,14 @@ import { EMBLEMS } from "../game/emblems";
 import { useGame } from "../game/store";
 import { WeekStrip, usePlanWeek } from "./ui";
 
-// Home tab, top part: the round rank medal (tap to open Rank & Plan) beside a compact level card.
+// Home tab, top part: the rank emblem (tap to open Rank & Plan) beside a compact level card.
 export const HomeRank = memo(function HomeRank({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const { game: g } = useGame();
   const rank = RANKS[g.level - 1];
   const frac = g.divisionSize ? Math.min(1, g.within / g.divisionSize) : 1;
   const name = `${g.rankName}${g.division ? ` ${g.division}` : ""}`;
-  const medal = compact ? 84 : 104;
+  const medal = compact ? 92 : 116;
   const toGo = Math.max(0, g.divisionSize - g.within);
   const next = g.held ? "Promotion series next" : `${toGo} RP to ${g.division === "I" ? "next rank" : "next division"}`;
   const open = () => router.push("/training");
@@ -24,9 +24,7 @@ export const HomeRank = memo(function HomeRank({ compact = false }: { compact?: 
   return (
     <View style={s.row}>
       <Pressable onPress={open} style={s.medalCol} accessibilityRole="button" accessibilityLabel={`${name}. Tap to view rank details.`} testID="home-rank-medal">
-        <View style={[s.medal, { width: medal, height: medal, borderRadius: medal / 2 }]}>
-          <Image source={EMBLEMS[g.level - 1]} style={{ width: medal - 10, height: medal - 10 }} contentFit="contain" transition={250} />
-        </View>
+        <Image source={EMBLEMS[g.level - 1]} style={{ width: medal, height: medal }} contentFit="contain" transition={250} />
         {!compact ? (
           <>
             <Text style={s.medalLabel}>RANK</Text>
@@ -94,12 +92,11 @@ export const HomeWeek = memo(function HomeWeek({ compact = false }: { compact?: 
 });
 
 const s = StyleSheet.create({
-  row: { flexDirection: "row", gap: spacing.sm, alignItems: "stretch" },
+  row: { flexDirection: "row", gap: spacing.md, alignItems: "center" },
   medalCol: { alignItems: "center", justifyContent: "center", gap: 2 },
-  medal: { alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.brandSecondary, backgroundColor: colors.surfaceSecondary },
   medalLabel: { color: colors.brandSecondary, fontSize: 11, fontWeight: "900", letterSpacing: 1.2, marginTop: 2 },
   medalHint: { color: colors.muted, fontSize: 10 },
-  card: { flex: 1, backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.brandSecondary, gap: 4, justifyContent: "center" },
+  card: { flex: 1, backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: 10, borderWidth: 1, borderColor: colors.brandSecondary, gap: 5, justifyContent: "center" },
   between: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   eyebrow: { color: colors.brandSecondary, fontSize: 10, fontWeight: "800", letterSpacing: 1.3 },
   rp: { color: colors.onSurface, fontSize: 13, fontWeight: "800" },
@@ -108,11 +105,11 @@ const s = StyleSheet.create({
   track: { height: 8, borderRadius: 4, backgroundColor: colors.surfaceTertiary, overflow: "hidden", marginTop: 2 },
   fill: { height: "100%", backgroundColor: colors.brandSecondary },
   small: { color: colors.muted, fontSize: 11 },
-  chips: { flexDirection: "row", gap: 6, marginTop: 4 },
-  chip: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 8, paddingVertical: 5 },
+  chips: { flexDirection: "row", gap: 8, marginTop: 5 },
+  chip: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.surfaceTertiary, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 6 },
   chipLabel: { color: colors.muted, fontSize: 9, fontWeight: "800", letterSpacing: 0.8 },
   chipText: { color: colors.onSurface, fontSize: 13, fontWeight: "800" },
-  weekCard: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, gap: 8 },
+  weekCard: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, gap: 10 },
   weekTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
   season: { color: colors.muted, fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
 });
