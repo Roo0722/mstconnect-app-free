@@ -110,7 +110,7 @@ async function run(trainedToday: boolean) {
     const next: Record<string, string> = {};
     for (const e of events) {
       const w = eventWhen(e);
-      if (!e.past && w && (w.start ?? w.day + 86_400_000) > now) next[e.id] = e.title;
+      if (!e.past && !e.cancelled && w && (w.start ?? w.day + 86_400_000) > now) next[e.id] = e.title;
     }
     // keep ones that just moved to Past (so the cancelled check can see them) until they have started
     for (const e of events) {

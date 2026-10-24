@@ -58,7 +58,7 @@ export const prettyTime = (t: string) => {
   return formatClock(h, min);
 };
 
-export type PlanEvent = { id: string; title: string; location?: string | null; starts_at?: string | null; created_at?: string; date?: string | null; past?: boolean };
+export type PlanEvent = { id: string; title: string; location?: string | null; starts_at?: string | null; created_at?: string; date?: string | null; past?: boolean; cancelled?: boolean };
 
 // An event's day (start of day, Manila) and exact start, when known.
 export function eventWhen(e: PlanEvent): { day: number; start: number | null } | null {
@@ -82,7 +82,7 @@ export function weekView(plan: Plan, events: PlanEvent[], now: number): DayView[
   return Array.from({ length: 7 }, (_, i) => {
     const ms = ws + i * D;
     const evs = plan.eventsOn
-      ? events.filter((e) => !e.past && eventWhen(e)?.day === ms).sort((a, b) => (eventWhen(a)!.start ?? 0) - (eventWhen(b)!.start ?? 0))
+      ? events.filter((e) => !e.past && !e.cancelled && eventWhen(e)?.day === ms).sort((a, b) => (eventWhen(a)!.start ?? 0) - (eventWhen(b)!.start ?? 0))
       : [];
     return { index: i, ms, plan: plan.days[i] ?? rest(), events: evs, isToday: ms === today, isPast: ms < today };
   });
@@ -125,7 +125,7 @@ export function buildReminders(args: {
 
   if (events && plan.eventsOn) {
     for (const e of events) {
-      if (e.past) continue;
+      if (e.past || e.cancelled) continue;
       const w = eventWhen(e);
       if (!w) continue;
       const where = e.location ? ` · ${e.location}` : "";
@@ -148,6 +148,7 @@ export function buildReminders(args: {
 // An event the player was told about that has since moved to "Past events" before it started: it was cancelled.
 export function cancelledEvents(events: PlanEvent[], known: Record<string, string>, now: number): PlanEvent[] {
   return events.filter((e) => {
+    if (e.cancelled) return !!known[e.id] && (eventWhen(e)?.day ?? 0) + D > now; // the website marks it cancelled
     if (!e.past || !known[e.id]) return false;
     const w = eventWhen(e);
     return !!w && (w.start ?? w.day + D) > now;

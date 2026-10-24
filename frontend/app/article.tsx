@@ -62,7 +62,7 @@ export default function ArticleScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
         </Pressable>
         <Text style={[styles.headerTitle, { flex: 1 }]}>{category ? String(category).toUpperCase() : "ANNOUNCEMENT"}</Text>
-        {ev?.starts_at && !ev.past ? (
+        {ev?.starts_at && !ev.past && !ev.cancelled ? (
           <Pressable testID="calendar-btn" onPress={addToCalendar} style={styles.backBtn} accessibilityLabel="Add to calendar">
             <Ionicons name="calendar-outline" size={20} color={colors.onSurface} />
           </Pressable>
@@ -76,7 +76,9 @@ export default function ArticleScreen() {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md }}
         refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={colors.brandPrimary} colors={[colors.brandPrimary]} />}
       >
-        <Text style={styles.title}>{shownTitle}</Text>
+        {ev?.cancelled ? <Text style={styles.cancelTag}>CANCELLED</Text> : null}
+        <Text style={[styles.title, ev?.cancelled && { textDecorationLine: "line-through", color: colors.muted }]}>{shownTitle}</Text>
+        {ev?.cancelled && ev.cancel_reason ? <Text style={styles.cancelReason}>{ev.cancel_reason}</Text> : null}
         {date ? <Text style={styles.date}>{date}</Text> : null}
 
         {q.isLoading ? <ActivityIndicator color={colors.brandPrimary} style={{ marginTop: spacing.xl }} /> : null}
@@ -126,6 +128,8 @@ export default function ArticleScreen() {
 }
 
 const styles = StyleSheet.create({
+  cancelTag: { color: colors.brandPrimary, fontSize: 11, fontWeight: "900", letterSpacing: 1.4 },
+  cancelReason: { color: colors.brandPrimary, fontSize: 14, fontWeight: "700" },
   root: { flex: 1, backgroundColor: colors.surface },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   backBtn: {

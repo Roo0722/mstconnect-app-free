@@ -28,6 +28,8 @@ export type MstcEvent = {
   starts_at?: string | null;
   contact?: string | null;
   past?: boolean;
+  cancelled?: boolean; // the website marks it "Cancelled" (it stays listed until the day it was due to start)
+  cancel_reason?: string | null;
   created_at: string;
   url?: string;
 };
@@ -351,9 +353,11 @@ async function loadEvents(): Promise<MstcEvent[]> {
   const html = await getHtml("/events");
   const pastAt = html.search(/>\s*Past events\s*</i);
   return cards(html, "events").map((c) => {
-    const ls = lines(c.segment).filter(
-      (l) => l !== c.title && !/^(upcoming|past events)$/i.test(l) && !/^\d{1,2}\/\d{1,2}$/.test(l) && !/^pinned$/i.test(l) && !/^event details/i.test(l),
-    );
+    // badge lines such as "Cancelled", "Pinned", "Upcoming" (possibly several on one line)
+    const BADGES = /^(?:(?:cancel{1,2}ed|pinned|upcoming|past events|past)\s*)+$/i;
+    const all = lines(c.segment).filter((l) => l !== c.title);
+    const cancelled = all.some((l) => BADGES.test(l) && /cancel{1,2}ed/i.test(l));
+    const ls = all.filter((l) => !BADGES.test(l) && !/^\d{1,2}\/\d{1,2}$/.test(l) && !/^event details/i.test(l));
 
     // the "Oct 10, 2026 · 07:00–11:30" line
     const di = ls.findIndex((l) => DATE_RE.test(l));
@@ -368,6 +372,9 @@ async function loadEvents(): Promise<MstcEvent[]> {
     const starts_at =
       date && start !== undefined ? `${date.iso}T${pad(Math.floor(start / 60) % 24)}:${pad(start % 60)}:00+08:00` : null;
     const time = start === undefined ? null : end === undefined ? prettyClock(start) : `${prettyClock(start)} – ${prettyClock(end)}`;
+
+    // the reason is the text between the badges and the date line (only meaningful when cancelled)
+    const reasonText = cancelled && di > 0 ? ls.slice(0, di).join(" ").replace(/^reason\s*:\s*/i, "").trim() : "";
 
     // everything after the date line: location, optional "Contact:", then the description
     const after = di >= 0 ? ls.slice(di + 1) : ls;
@@ -396,6 +403,8 @@ async function loadEvents(): Promise<MstcEvent[]> {
       starts_at,
       contact,
       past: pastAt >= 0 && c.start > pastAt,
+      cancelled,
+      cancel_reason: reasonText || null,
       created_at: date ? `${date.iso}T00:00:00+08:00` : new Date(0).toISOString(),
       url: c.url,
     };
@@ -406,9 +415,25 @@ async function nextEvent(): Promise<MstcEvent | null> {
   return pickNextEvent(await listEvents());
 }
 
+// A cancelled event stays on the website until the end of the day it was due to start (Philippine time).
+function cancelledStillShown(e: MstcEvent, now: number): boolean {
+  const day = e.starts_at ? e.starts_at.slice(0, 10) : e.created_at && Date.parse(e.created_at) > 0 ? e.created_at.slice(0, 10) : null;
+  if (!day) return true;
+  return Date.parse(`${day}T23:59:59+08:00`) >= now;
+}
+
+// Cancelled events that are still on the website, soonest first. Home shows them as a small red notice.
+export function pickCancelledNotice(events: MstcEvent[]): MstcEvent[] {
+  const now = Date.now();
+  return events
+    .filter((e) => e.cancelled && !e.past && cancelledStillShown(e, now))
+    .sort((a, b) => (a.starts_at ? Date.parse(a.starts_at) : Infinity) - (b.starts_at ? Date.parse(b.starts_at) : Infinity));
+}
+
 export function pickNextEvent(events: MstcEvent[]): MstcEvent | null {
   const now = Date.now();
   const upcoming = events.filter((e) => {
+    if (e.cancelled) return false; // a cancelled event is never "next"; Home mentions it separately
     if (e.past) return false;
     if (e.starts_at) return Date.parse(e.starts_at) + (e.duration_minutes ?? 120) * 60_000 >= now;
     return true;

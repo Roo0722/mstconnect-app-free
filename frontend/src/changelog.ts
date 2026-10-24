@@ -4,6 +4,17 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-27-cancelled-events",
+    date: "27 Oct 2026",
+    title: "Cancelled events",
+    tag: "Beta",
+    items: [
+      "Cancelled events are marked Cancelled in the app, with the reason, until the day they were due to start, just like on the website.",
+      "Home shows a red notice for a cancelled event. A cancelled event is never shown as the next event or counted down.",
+      "Cancelled events leave your weekly plan and get no reminders. If you had reminders for it, you get one message that it was cancelled.",
+    ],
+  },
+  {
     id: "2026-10-26-cache-cleanup",
     date: "26 Oct 2026",
     title: "Frees up storage",

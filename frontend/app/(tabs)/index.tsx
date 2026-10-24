@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { api, type MstcEvent } from "../../src/api";
+import { api, pickCancelledNotice, type MstcEvent } from "../../src/api";
 import { colors, spacing, radius } from "../../src/theme";
 import { BackgroundGlow } from "../../src/BackgroundGlow";
 import { HomeRank } from "../../src/plan/HomeRank";
@@ -148,6 +148,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const eventQ = useQuery({ queryKey: ["next-event"], queryFn: api.nextEvent });
   const annQ = useQuery({ queryKey: ["announcements"], queryFn: api.listAnnouncements });
+  const allEventsQ = useQuery({ queryKey: ["events"], queryFn: api.listEvents });
+  const cancelled = useMemo(() => pickCancelledNotice(allEventsQ.data ?? []), [allEventsQ.data]);
   const notifQ = useQuery({ queryKey: ["notifications"], queryFn: api.listNotifications });
 
   const refreshing = eventQ.isRefetching || annQ.isRefetching || notifQ.isRefetching;
@@ -216,6 +218,24 @@ export default function HomeScreen() {
             }
           />
         )}
+
+        {cancelled.map((e) => (
+          <Pressable
+            key={e.id}
+            style={styles.cancelNote}
+            testID="cancelled-event-note"
+            onPress={() => e.url && router.push({ pathname: "/article", params: { url: e.url, title: e.title, date: e.date ?? "", category: "event" } })}
+            accessibilityRole="button"
+            accessibilityLabel={`Cancelled event: ${e.title}${e.date ? `, ${e.date}` : ""}${e.cancel_reason ? `. ${e.cancel_reason}` : ""}`}
+          >
+            <Ionicons name="close-circle" size={18} color={colors.brandPrimary} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cancelLabel}>CANCELLED{e.date ? ` · ${e.date}` : ""}</Text>
+              <Text style={styles.cancelTitle} numberOfLines={1}>{e.title}</Text>
+              {e.cancel_reason ? <Text style={styles.cancelReason} numberOfLines={2}>{e.cancel_reason}</Text> : null}
+            </View>
+          </Pressable>
+        ))}
 
         <Text style={styles.sectionLabel}>LATEST ANNOUNCEMENT</Text>
         {annQ.isLoading ? (
@@ -346,6 +366,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.md,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
+  cancelNote: {
+    flexDirection: "row", alignItems: "flex-start", gap: spacing.sm,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.brandPrimary, marginBottom: spacing.md,
+  },
+  cancelLabel: { color: colors.brandPrimary, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
+  cancelTitle: { color: colors.onSurface, fontSize: 14, fontWeight: "800", textDecorationLine: "line-through", marginTop: 2 },
+  cancelReason: { color: colors.muted, fontSize: 12, marginTop: 2 },
   emptyTitle: { color: colors.onSurface, fontSize: 16, fontWeight: "800", marginTop: 3 },
   heroMeta: { gap: 6, marginTop: 4 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
