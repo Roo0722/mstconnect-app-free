@@ -56,6 +56,30 @@ export function logManual(kind: Kind, minutes: number) {
   return upsertActivity({ id: newId(), kind, start: end - minutes * 60_000, end, minutes, manual: true });
 }
 
+// Restore from a backup file: add the sessions we don't have yet (same id = same session, keep the longer one).
+export async function mergeActivities(incoming: unknown[]): Promise<{ added: number; total: number }> {
+  await load();
+  const byId = new Map(cache.map((a) => [a.id, a]));
+  let added = 0;
+  for (const a of incoming) {
+    if (!valid(a)) continue;
+    const have = byId.get(a.id);
+    if (!have) added++;
+    if (!have || a.minutes > have.minutes) byId.set(a.id, a);
+  }
+  let next = [...byId.values()].sort((p, q) => p.start - q.start);
+  if (next.length > MAX_KEEP) next = next.slice(next.length - MAX_KEEP);
+  cache = next;
+  persist();
+  emit();
+  return { added, total: cache.length };
+}
+
+export async function getActivities(): Promise<Activity[]> {
+  await load();
+  return cache;
+}
+
 export async function clearAll() {
   await load();
   cache = [];

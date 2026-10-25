@@ -6,6 +6,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { format } from "date-fns";
 import { Image } from "expo-image";
 import { EMBLEMS } from "../src/game/emblems";
+import { BackupCard } from "../src/plan/BackupCard";
 import { PlanEditor, ShareCard, TodayCard, shareRankPicture, usePlanWeek } from "../src/plan/ui";
 import { colors, spacing, radius } from "../src/theme";
 import { BackgroundGlow } from "../src/BackgroundGlow";
@@ -292,6 +293,7 @@ export default function TrainingScreen() {
         <LogCard />
         <Recent g={g} />
         <Ladder g={g} />
+        <BackupCard />
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>HOW IT WORKS</Text>

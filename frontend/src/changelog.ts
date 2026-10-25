@@ -4,6 +4,16 @@ export type Change = { id: string; date: string; title: string; tag?: "New" | "B
 
 export const CHANGELOG: Change[] = [
   {
+    id: "2026-10-29-backup",
+    date: "29 Oct 2026",
+    title: "Back up and transfer your data",
+    tag: "New",
+    items: [
+      "New Backup & Transfer card in Rank & Plan. Back up my data makes a small file you can send to yourself; Restore adds it to another phone or to the normal app.",
+      "Restoring adds sessions and never deletes what is already on the phone. Your rank is worked out from the sessions, so it comes along.",
+    ],
+  },
+  {
     id: "2026-10-28-home-dashboard",
     date: "28 Oct 2026",
     title: "Home is now a fixed dashboard",
